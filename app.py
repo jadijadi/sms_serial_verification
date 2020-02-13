@@ -1,22 +1,15 @@
 from flask import Flask, jsonify, request
 from pandas import read_excel
 import requests
+import re
 import sqlite3
 import config
 
 app = Flask(__name__)
 
-@app.route('/v1/process', methods=['POST'])
-def process():
-    """ this is a call back from KaveNegar. Will get sender and message and
-    will check if it is valid, then answers back
-    """
-    data = request.form
-    sender = data["from"]
-    message = normalize_string(data["message"])
-    print(f'received {message} from {sender}')
-    send_sms(sender, 'Hi '+message)
-    ret = {"message": "processed"}
+@app.route('/v1/ok')
+def health_check():
+    ret = {'message': 'ok'}
     return jsonify(ret), 200
 
 def send_sms(receptor, message):
@@ -35,9 +28,8 @@ def normalize_string(str):
     for i in range(len(from_char)):
         str = str.replace(from_char[i], to_char[i])
     str = str.upper()
-
+    str = re.sub(r'\W+', '', str) # remove any non alphanumeric character
     return str
-
 
 def import_database_from_excel(filepath):
     """ gets an excel file name and imports lookup data (data and failures) from it
@@ -106,9 +98,45 @@ def import_database_from_excel(filepath):
 
     return (serials_counter, invalid_counter)
 
-def check_serial():
-    pass
+def check_serial(serial):
+    """ this function will get one serial number and return appropriate
+    answer to that, after consulting the db
+    """
+    conn = sqlite3.connect(config.DATABASE_FILE_PATH)
+    cur = conn.cursor()
+
+    query = f"SELECT * FROM invalids WHERE invalid_serial == '{serial}'"
+    results = cur.execute(query)
+    if len(results.fetchall()) == 1:
+        return 'this serial is among failed ones' #TODO: return the string provided by the customer
+
+    query = f"SELECT * FROM serials WHERE start_serial < '{serial}' and end_serial > '{serial}';"
+    print (query)
+    results = cur.execute(query)
+    if len(results.fetchall()) == 1:
+        return 'I found your serial' # TODO: return the string provided by the customer
+
+    return 'it was not in the db'
+
+
+@app.route('/v1/process', methods=['POST'])
+def process():
+    """ this is a call back from KaveNegar. Will get sender and message and
+    will check if it is valid, then answers back
+    """
+    data = request.form
+    sender = data["from"]
+    message = normalize_string(data["message"])
+    print(f'received {message} from {sender}') #TODO: logging
+
+    answer = check_serial(message)
+
+    send_sms(sender, answer)
+    ret = {"message": "processed"}
+    return jsonify(ret), 200
 
 if __name__ == "__main__":
+    import_database_from_excel('../data.xlsx')
+    print (check_serial('JJ1000002'))
     app.run("0.0.0.0", 5000, debug=True)
     
