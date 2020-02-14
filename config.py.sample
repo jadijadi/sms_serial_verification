@@ -2,3 +2,10 @@
 
 API_KEY = 'put your API key from kavenegar here'
 DATABASE_FILE_PATH = 'path to the file which is used by sqlite'
+
+# login cedentials
+USERNAME = 'jadi'
+PASSWORD = 'pass'
+
+# generate one strong secret key for flask.
+SECRET_KEY = 'random long string with alphanumeric + #()*&'
