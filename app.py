@@ -89,13 +89,19 @@ def send_sms(receptor, message):
     print(f"message *{message}* sent. status code is {res.status_code}")         
 
 def normalize_string(data):
-    from_char = '۱۲۳۴۵۶۷۸۹۰'
-    to_char = '1234567890'
-    for i in range(len(from_char)):
-        data = data.replace(from_char[i], to_char[i])
-    data = data.upper()
-    data = re.sub(r'\W+', '', data)  # remove any non alphanumeric character
-    return data
+	# Arabic number and their english equivalents
+	chars = dict(zip(list('۱۲۳۴۵۶۷۸۹۰'), list('1234567890')))
+	result = '' 
+	# Grab digits and convert each digit to english digit if it is not.
+	for ch in data:
+		if ch.isnumeric():
+			 # check if the digit is arabic or not
+			if chars.get(ch) is not None: 
+				result += chars.get(ch)
+			else:
+				result += ch
+	return result.upper()
+
 
 def import_database_from_excel(filepath):
     """ gets an excel file name and imports lookup data (data and failures) from it
