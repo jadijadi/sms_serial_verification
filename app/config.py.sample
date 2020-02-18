@@ -9,3 +9,8 @@ PASSWORD = 'pass'
 
 # generate one strong secret key for flask.
 SECRET_KEY = 'random long string with alphanumeric + #()*&'
+
+
+### Do not change below unless you know what you are doing
+UPLOAD_FOLDER = '/tmp'
+ALLOWED_EXTENSIONS = {'xlsx'} 

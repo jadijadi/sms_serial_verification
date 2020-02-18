@@ -16,4 +16,5 @@
 - [x] in normalize, convert AB001 to AB00001 (max len? say 15)
 - [x] dockerize (alpine? search for uwsgi)
 - [x] merge pull requests.. check I mean :)
+- [ ] do proper inserts with INTO
 

@@ -1,17 +1,30 @@
-from flask import Flask, jsonify, request, Response, redirect, url_for, session, abort
-from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
-from pandas import read_excel
 import requests
 import re
+import os
+from flask import Flask, flash, jsonify, request, Response, redirect, url_for, session, abort
+from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
+from pandas import read_excel
+from werkzeug.utils import secure_filename
 import sqlite3
 import config
 
 app = Flask(__name__)
 
+UPLOAD_FOLDER = config.UPLOAD_FOLDER
+ALLOWED_EXTENSIONS = config.ALLOWED_EXTENSIONS
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
 # flask-login
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
+
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
 
 app.config.update(
     SECRET_KEY = config.SECRET_KEY
@@ -28,10 +41,44 @@ class User(UserMixin):
 user = User(0)
 
 # some protected url
-@app.route('/')
+@app.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
-    return Response("<html><form ")
+    if request.method == 'POST':
+        # check if the post request has the file part
+        if 'file' not in request.files:
+            flash('No file part')
+            session['message'] = 'No file part'
+            return redirect(request.url)
+        file = request.files['file']
+        # if user does not select file, browser also
+        # submit an empty part without filename
+        if file.filename == '':
+            flash('No selected file')
+            session['message'] = f'No selected file'
+            return redirect(request.url)
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            rows, failures = import_database_from_excel(file_path)
+            session['message'] = f'Imported {rows} rows of serials and {failures} rows of failure'
+            os.remove(file_path)
+            return redirect('/')
+
+    message = session.get('message', '')
+    session['message'] = ''
+    return f'''
+    <!doctype html>
+    <title>Upload new File</title>
+    <h1>Upload new File</h1>
+    <h3>{message}</h3>
+    <form method=post enctype=multipart/form-data>
+      <input type=file name=file>
+      <input type=submit value=Upload>
+    </form>
+    '''
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -41,7 +88,7 @@ def login():
         password = request.form['password']
         if password == config.PASSWORD and username == config.USERNAME:
             login_user(user)
-            return redirect('/') 
+            return redirect('/')
         else:
             return abort(401)
     else:
@@ -86,7 +133,7 @@ def send_sms(receptor, message):
     data = {"message": message,
             "receptor": receptor}
     res = requests.post(url, data)
-    print(f"message *{message}* sent. status code is {res.status_code}")         
+    print(f"message *{message}* sent. status code is {res.status_code}")
 
 def normalize_string(data, fixed_size=30):
     from_persian_char = '۱۲۳۴۵۶۷۸۹۰'
@@ -107,7 +154,7 @@ def normalize_string(data, fixed_size=30):
 
     missing_zeros = fixed_size - len(all_alpha) - len(all_digit)
 
-    data = all_alpha + '0' * missing_zeros + all_digit    
+    data = all_alpha + '0' * missing_zeros + all_digit
 
     return data
 
@@ -122,7 +169,7 @@ def import_database_from_excel(filepath):
 
     returns two integers: (number of serial rows, number of invalid rows)
     """
-    # df contains lookup data in the form of 
+    # df contains lookup data in the form of
     # Row	Reference Number	Description	Start Serial	End Serial	Date
 
     # TODO: make sure that the data is imported correctly, we need to backup the old one
@@ -143,7 +190,7 @@ def import_database_from_excel(filepath):
         date DATE);""")
     conn.commit()
 
-    df = read_excel(filepath, 0) 
+    df = read_excel(filepath, 0)
     serials_counter = 0
     for index, (line, ref, desc, start_serial, end_serial, date) in df.iterrows():
         start_serial = normalize_string(start_serial)
@@ -164,7 +211,7 @@ def import_database_from_excel(filepath):
         invalid_serial TEXT PRIMARY KEY);""")
     conn.commit()
     invalid_counter = 0
-    df = read_excel(filepath, 1) 
+    df = read_excel(filepath, 1)
     for index, (failed_serial, ) in df.iterrows():
         query = f'INSERT INTO invalids VALUES ("{failed_serial}")'
         cur.execute(query)
@@ -215,6 +262,4 @@ def process():
     return jsonify(ret), 200
 
 if __name__ == "__main__":
-    import_database_from_excel('../data.xlsx') 
     app.run("0.0.0.0", 5000, debug=True)
-    
