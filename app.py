@@ -88,7 +88,7 @@ def send_sms(receptor, message):
     res = requests.post(url, data)
     print(f"message *{message}* sent. status code is {res.status_code}")         
 
-def normalize_string(data):
+def normalize_string(data, fixed_size=30):
     from_persian_char = '۱۲۳۴۵۶۷۸۹۰'
     from_arabic_char = '١٢٣٤٥٦٧٨٩٠'
     to_char = '1234567890'
@@ -97,6 +97,18 @@ def normalize_string(data):
         data = data.replace(from_arabic_char[i], to_char[i])
     data = data.upper()
     data = re.sub(r'\W+', '', data)  # remove any non alphanumeric character
+    all_alpha = ''
+    all_digit = ''
+    for c in data:
+        if c.isalpha():
+            all_alpha += c
+        elif c.isdigit():
+            all_digit += c
+
+    missing_zeros = fixed_size - len(all_alpha) - len(all_digit)
+
+    data = all_alpha + '0' * missing_zeros + all_digit    
+
     return data
 
 def import_database_from_excel(filepath):
