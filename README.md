@@ -14,6 +14,6 @@
 - [x] another 10 % problem :D
 - [x] refactor name str in normalize function
 - [x] in normalize, convert AB001 to AB00001 (max len? say 15)
-- [ ] dockerize (alpine? search for uwsgi)
+- [x] dockerize (alpine? search for uwsgi)
 - [x] merge pull requests.. check I mean :)
 

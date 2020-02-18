@@ -31,7 +31,7 @@ user = User(0)
 @app.route('/')
 @login_required
 def home():
-    return Response("Hello World!")
+    return Response("<html><form ")
 
 
 @app.route("/login", methods=["GET", "POST"])
