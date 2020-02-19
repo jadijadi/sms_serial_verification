@@ -142,28 +142,34 @@ def send_sms(receptor, message):
     res = requests.post(url, data)
     print(f"message *{message}* sent. status code is {res.status_code}")
 
-def normalize_string(data, fixed_size=30):
+def normalize_string(serial_number, fixed_size=30):
+
+    # remove any non-alphanumeric character
+    serial_number = re.sub(r'\W+', '', serial_number)
+    serial_number = serial_number.upper()
+    
+    #replace persian and arabic numeric chars to standard format
     from_persian_char = '۱۲۳۴۵۶۷۸۹۰'
     from_arabic_char = '١٢٣٤٥٦٧٨٩٠'
     to_char = '1234567890'
     for i in range(len(to_char)):
-        data = data.replace(from_persian_char[i], to_char[i])
-        data = data.replace(from_arabic_char[i], to_char[i])
-    data = data.upper()
-    data = re.sub(r'\W+', '', data)  # remove any non alphanumeric character
+        serial_number = serial_number.replace(from_persian_char[i], to_char[i])
+        serial_number = serial_number.replace(from_arabic_char[i], to_char[i])
+    
+    # separate the alphabetic and numeric part of the serial number
     all_alpha = ''
     all_digit = ''
-    for c in data:
+    for c in serial_number:
         if c.isalpha():
             all_alpha += c
         elif c.isdigit():
             all_digit += c
 
+    # add zeros between alphabetic and numeric parts to standardaize the length of the serial number
     missing_zeros = fixed_size - len(all_alpha) - len(all_digit)
+    serial_number = all_alpha + '0' * missing_zeros + all_digit
 
-    data = all_alpha + '0' * missing_zeros + all_digit
-
-    return data
+    return serial_number
 
 def import_database_from_excel(filepath):
     """ gets an excel file name and imports lookup data (data and failures) from it
