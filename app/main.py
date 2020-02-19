@@ -17,6 +17,8 @@ limiter = Limiter(app,
 
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = config.ALLOWED_EXTENSIONS
+CALL_BACK_TOKEN = config.CALL_BACK_TOKEN
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # flask-login
@@ -89,7 +91,7 @@ def home():
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute")
 def login():
-    if request.method == 'POST': 
+    if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         if password == config.PASSWORD and username == config.USERNAME:
@@ -251,7 +253,7 @@ def check_serial(serial):
     return 'it was not in the db'
 
 
-@app.route('/v1/process', methods=['POST'])
+@app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
 def process():
     """ this is a call back from KaveNegar. Will get sender and message and
     will check if it is valid, then answers back

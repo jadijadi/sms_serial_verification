@@ -14,10 +14,11 @@
 - [x] refactor name str in normalize function
 - [x] in normalize, convert AB001 to AB00001 (max len? say 15)
 - [x] dockerize (alpine? search for uwsgi)
-- [ ] merge pull requests.. check I mean :)
+- [x] merge pull requests.. check I mean :)
 - [ ] do proper inserts with INTO
 - [ ] templating
-- [ ] H shafiee
+- [x] thanks H shafiee
 - [x] rate limit
+- [ ] add call back token on kavenegar site
 
 

@@ -3,6 +3,10 @@
 API_KEY = 'put your API key from kavenegar here'
 DATABASE_FILE_PATH = 'path to the file which is used by sqlite'
 
+# call back url from KaveNegar will look like
+# /v1/CALL_BACK_TOKEN/process
+CALL_BACK_TOKEN = 'CALL BACK TOKEN'
+
 # login cedentials
 USERNAME = 'jadi'
 PASSWORD = 'pass'
