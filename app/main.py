@@ -234,10 +234,10 @@ def check_serial(serial):
 
     query = f"SELECT * FROM invalids WHERE invalid_serial == '{serial}'"
     results = cur.execute(query)
-    if len(results.fetchall()) == 1:
+    if len(results.fetchall()) > 0:
         return 'this serial is among failed ones' #TODO: return the string provided by the customer
 
-    query = f"SELECT * FROM serials WHERE start_serial < '{serial}' and end_serial > '{serial}';"
+    query = f"SELECT * FROM serials WHERE start_serial <= '{serial}' and end_serial >= '{serial}';"
     results = cur.execute(query)
     if len(results.fetchall()) == 1:
         return 'I found your serial' # TODO: return the string provided by the customer
