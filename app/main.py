@@ -1,7 +1,7 @@
 import requests
 import re
 import os
-from flask import Flask, flash, jsonify, request, Response, redirect, url_for, session, abort
+from flask import Flask, flash, jsonify, request, Response, redirect, url_for, session, abort, render_template
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
 from pandas import read_excel
 from werkzeug.utils import secure_filename
@@ -69,12 +69,7 @@ def home():
             file.save(file_path)
             rows, failures, status = import_database_from_excel(file_path)
             if status == False:
-                    return Response('''
-                        <!doctype html>
-                            <title>Invalid File</title>
-                            <h1>Error</h1>
-                        <h3>The uploaded file has errors. Please check!</h3>
-                        ''')
+                    return render_template('index.html', error=True, text="File error, please check the file.")
 
             session['message'] = f'Imported {rows} rows of serials and {failures} rows of failure'
             os.remove(file_path)
@@ -82,16 +77,7 @@ def home():
 
     message = session.get('message', '')
     session['message'] = ''
-    return f'''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <h3>{message}</h3>
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    '''
+    return render_template('index.html', text=message)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -106,13 +92,7 @@ def login():
         else:
             return abort(401)
     else:
-        return Response('''
-        <form action="" method="post">
-            <p><input type=text name=username>
-            <p><input type=password name=password>
-            <p><input type=submit value=Login>
-        </form>
-        ''')
+        return render_template('login.html')
 
 # somewhere to logout
 @app.route("/logout")
@@ -208,7 +188,7 @@ def import_database_from_excel(filepath):
     try:
         df = read_excel(filepath, 0)
     except:
-        print('Malformed XLSX file!', e)
+        print('Malformed XLSX file!')
         return (0, 0, False)
 
     serials_counter = 0
@@ -243,7 +223,7 @@ def import_database_from_excel(filepath):
 
     conn.close()
 
-    return (serials_counter, invalid_counter)
+    return (serials_counter, invalid_counter, True)
 
 def check_serial(serial):
     """ this function will get one serial number and return appropriate

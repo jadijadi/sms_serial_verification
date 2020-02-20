@@ -1,0 +1,8 @@
+.login {
+    width: 30em;
+    display: table;
+    margin: 0 auto;
+}
+.error {
+    color: #fc2407;
+}

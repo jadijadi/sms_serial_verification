@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login</title>
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1" />
+	<!--[if lte IE 8]><script src="{{ url_for('static', filename='js/ie/html5shiv.js') }}"></script><![endif]-->
+	<link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}"/>
+	<!--[if lte IE 9]><link rel="stylesheet" href="{{ url_for('static', filename='css/ie9.css') }}" /><![endif]-->
+	<!--[if lte IE 8]><link rel="stylesheet" href="{{ url_for('static', filename='css/ie8.css') }}" /><![endif]-->
+</head>
+<body>
+    <div id="page-wrapper">
+		<header id="header">
+			<h1><a href="index.html">Login</a></h1>
+		</header>
+    </div>
+    <section id="wrapper">
+        <header><div class="login">
+                <form method="post">
+                    Username:<br>
+                    <input type="text" name="username" >
+                    <br>
+                    Password:<br>
+                    <input type="password" name="password"> 
+                    <br><br>
+                    <input type="submit" value="Login">
+                </form> 
+        </div></header>
+    </section>
+</body>
+</html>
