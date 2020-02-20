@@ -171,7 +171,7 @@ def import_database_from_excel(filepath):
 
     # remove the serials table if exists, then craete the new one
     cur.execute('DROP TABLE IF EXISTS serials')
-    cur.execute("""CREATE TABLE IF NOT EXISTS serials (
+    cur.execute("""CREATE TABLE serials (
         id INTEGER PRIMARY KEY,
         ref TEXT,
         desc TEXT,
@@ -185,8 +185,9 @@ def import_database_from_excel(filepath):
     for index, (line, ref, desc, start_serial, end_serial, date) in df.iterrows():
         start_serial = normalize_string(start_serial)
         end_serial = normalize_string(end_serial)
-        query = f'INSERT INTO serials VALUES ("{line}", "{ref}", "{desc}", "{start_serial}", "{end_serial}", "{date}");'
-        cur.execute(query)
+        cur.execute("INSERT INTO serials VALUES (?, ?, ?, ?, ?, ?)", (
+          line, ref, desc, start_serial, end_serial, date)
+        )
         # TODO: do some more error handling
         if serials_counter % 10 == 0:
             conn.commit()
@@ -197,14 +198,13 @@ def import_database_from_excel(filepath):
 
     # remove the invalid table if exists, then craete the new one
     cur.execute('DROP TABLE IF EXISTS invalids')
-    cur.execute("""CREATE TABLE IF NOT EXISTS invalids (
+    cur.execute("""CREATE TABLE invalids (
         invalid_serial TEXT PRIMARY KEY);""")
     conn.commit()
     invalid_counter = 0
     df = read_excel(filepath, 1)
     for index, (failed_serial, ) in df.iterrows():
-        query = f'INSERT INTO invalids VALUES ("{failed_serial}")'
-        cur.execute(query)
+        cur.execute('INSERT INTO invalids VALUES (?)', (failed_serial, ))
         # TODO: do some more error handling
         if invalid_counter % 10 == 0:
             conn.commit()
@@ -222,13 +222,11 @@ def check_serial(serial):
     conn = sqlite3.connect(config.DATABASE_FILE_PATH)
     cur = conn.cursor()
 
-    query = f"SELECT * FROM invalids WHERE invalid_serial == '{serial}'"
-    results = cur.execute(query)
+    results = cur.execute("SELECT * FROM invalids WHERE invalid_serial == ?", (serial, ))
     if len(results.fetchall()) > 0:
         return 'this serial is among failed ones' #TODO: return the string provided by the customer
 
-    query = f"SELECT * FROM serials WHERE start_serial <= '{serial}' and end_serial >= '{serial}';"
-    results = cur.execute(query)
+    results = cur.execute("SELECT * FROM serials WHERE start_serial <= ? and end_serial >= ?", (serial, serial))
     if len(results.fetchall()) == 1:
         return 'I found your serial' # TODO: return the string provided by the customer
 
