@@ -67,7 +67,15 @@ def home():
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-            rows, failures = import_database_from_excel(file_path)
+            rows, failures, status = import_database_from_excel(file_path)
+            if status == False:
+                    return Response('''
+                        <!doctype html>
+                            <title>Invalid File</title>
+                            <h1>Error</h1>
+                        <h3>The uploaded file has errors. Please check!</h3>
+                        ''')
+
             session['message'] = f'Imported {rows} rows of serials and {failures} rows of failure'
             os.remove(file_path)
             return redirect('/')
@@ -84,7 +92,6 @@ def home():
       <input type=submit value=Upload>
     </form>
     '''
-
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -197,7 +204,13 @@ def import_database_from_excel(filepath):
         date DATE);""")
     conn.commit()
 
-    df = read_excel(filepath, 0)
+    # Malformed XLSX
+    try:
+        df = read_excel(filepath, 0)
+    except:
+        print('Malformed XLSX file!', e)
+        return (0, 0, False)
+
     serials_counter = 0
     for index, (line, ref, desc, start_serial, end_serial, date) in df.iterrows():
         start_serial = normalize_string(start_serial)
