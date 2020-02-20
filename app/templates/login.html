@@ -18,6 +18,9 @@
     </div>
     <section id="wrapper">
         <header><div class="login">
+                {% if text %}
+                    <h2>{{ text }}</h2>
+                {% endif %}
                 <form method="post">
                     Username:<br>
                     <input type="text" name="username" >

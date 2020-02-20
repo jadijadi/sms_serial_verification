@@ -99,13 +99,13 @@ def login():
 @login_required
 def logout():
     logout_user()
-    return Response('<p>Logged out</p>')
+    return render_template('login.html', text='Logged Out!')
 
 
 # handle login failed
 @app.errorhandler(401)
 def page_not_found(error):
-    return Response('<p>Login failed</p>')
+    return render_template('login.html', text='Login Failed!')
 
 
 # callback to reload the user object
