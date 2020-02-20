@@ -44,7 +44,6 @@ class User(UserMixin):
         return "%d" % (self.id)
 
 
-# create some users with ids 1 to 20
 user = User(0)
 
 # some protected url
