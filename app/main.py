@@ -53,20 +53,20 @@ def home():
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
-            flash('No file part')
+            flash('No file part', 'danger')
             return redirect(request.url)
         file = request.files['file']
         # if user does not select file, browser also
         # submit an empty part without filename
         if file.filename == '':
-            flash('No selected file')            
+            flash('No selected file', 'danger')            
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             rows, failures = import_database_from_excel(file_path)
-            flash(f'Imported {rows} rows of serials and {failures} rows of failure')
+            flash(f'Imported {rows} rows of serials and {failures} rows of failure', 'success')
             os.remove(file_path)
             return redirect('/')
     
@@ -93,14 +93,14 @@ def login():
 @login_required
 def logout():
     logout_user()
-    flash('Logged out')
+    flash('Logged out', 'success')
     return redirect('/login')
 
 
 # handle login failed
 @app.errorhandler(401)
 def page_not_found(error):
-    flash('Login problem')
+    flash('Login problem', 'danger')
     return redirect('/login')
 
 

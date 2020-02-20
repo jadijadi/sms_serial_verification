@@ -13,7 +13,7 @@
     </head>
     <body class="sb-nav-fixed">
         <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
-            <a class="navbar-brand" href="index.html">Altech - Hologram</a><button class="btn btn-link btn-sm order-1 order-lg-0" id="sidebarToggle" href="#"><i class="fas fa-bars"></i></button
+            <a class="navbar-brand" href="/">Altech - Hologram</a><button class="btn btn-link btn-sm order-1 order-lg-0" id="sidebarToggle" href="#"><i class="fas fa-bars"></i></button
             ><!-- Navbar Search-->
             <!-- Navbar-->
             <ul class="navbar-nav ml-auto ml-md-0">
@@ -53,15 +53,19 @@
                 <main>
                     <div class="container-fluid">
                         <h1 class="mt-4">Dashboard</h1>
-{% with messages = get_flashed_messages() %}
-{% if messages %}
-    {% for message in messages %}
-    <div class="alert alert-warning" role="alert">
-        {{ message }}
-    </div>
-    {% endfor %}
-{% endif %}
-{% endwith %}                        <div class="row">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                            <div class="alert alert-{{ category }} alert-dismissible" role="alert">
+                                {{ message }}
+                                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                        {% endwith %}   
+                        <div class="row">
                             <div class="col-xl-3 col-md-6">
                                 <div class="card bg-primary text-white mb-4">
                                     <div class="card-body">Primary Card</div>
@@ -194,8 +198,8 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
         <script src="/static/assets/demo/chart-area-demo.js"></script>
         <script src="/static/assets/demo/chart-bar-demo.js"></script>
-        <script src="/static/https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
-        <script src="/static/https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
+        <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
         <script src="/static/assets/demo/datatables-demo.js"></script>
     </body>
     <!-- based on the https://startbootstrap.com/templates/sb-admin/ template -->
