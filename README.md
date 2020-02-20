@@ -16,7 +16,7 @@
 - [x] dockerize (alpine? search for uwsgi)
 - [x] merge pull requests.. check I mean :)
 - [ ] do proper inserts with INTO
-- [ ] templating
+- [X] templating
 - [x] thanks H shafiee
 - [x] rate limit
 - [ ] add call back token on kavenegar site
