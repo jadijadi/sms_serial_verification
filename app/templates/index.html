@@ -197,6 +197,12 @@
         <script src="/static/https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
         <script src="/static/https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
         <script src="/static/assets/demo/datatables-demo.js"></script>
+        <script>
+            $('#inputGroupFile01').on('change',function(){
+                    var fileName = $(this).val().split('\\').pop();
+                    $(this).next('.custom-file-label').html(fileName);
+            })
+        </script>
     </body>
     <!-- based on the https://startbootstrap.com/templates/sb-admin/ template -->
 </html>
