@@ -1,7 +1,13 @@
 # this is a sample config file. rename it to `config.py` and edit accordingly
 
 API_KEY = 'put your API key from kavenegar here'
-DATABASE_FILE_PATH = 'path to the file which is used by sqlite'
+
+# Mysql configs
+MYSQL_HOST = 'localhost'
+MYSQL_USERNAME = 'smsmysql'
+MYSQL_PASSWORD = 'test'
+MYSQL_DB_NAME = 'smsmysql'
+
 
 # call back url from KaveNegar will look like
 # /v1/CALL_BACK_TOKEN/process

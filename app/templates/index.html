@@ -112,7 +112,7 @@
                             </div>
                             <div class="col-xl-6">
                                 <div class="card mb-4">
-                                    <div class="card-header"><i class="fas fa-chart-bar mr-1"></i>Update DB with Excel file</div>
+                                    <div class="card-header"><i class="fas fa-database mr-1"></i>Update DB with Excel file</div>
                                     <div class="card-body">                                        
                                         <form method=post enctype=multipart/form-data> 
                                             <div class="input-group">
@@ -181,12 +181,7 @@
                 <footer class="py-4 bg-light mt-auto">
                     <div class="container-fluid">
                         <div class="d-flex align-items-center justify-content-between small">
-                            <div class="text-muted">Copyright &copy; Your Website 2019</div>
-                            <div>
-                                <a href="#">Privacy Policy</a>
-                                &middot;
-                                <a href="#">Terms &amp; Conditions</a>
-                            </div>
+                            <div class="text-muted">Copyleft; Altech 2020</div>
                         </div>
                     </div>
                 </footer>
@@ -201,6 +196,12 @@
         <script src="https://cdn.datatables.net/1.10.20/js/jquery.dataTables.min.js" crossorigin="anonymous"></script>
         <script src="https://cdn.datatables.net/1.10.20/js/dataTables.bootstrap4.min.js" crossorigin="anonymous"></script>
         <script src="/static/assets/demo/datatables-demo.js"></script>
+	<script>
+            $('#inputGroupFile01').on('change',function(){
+                    var fileName = $(this).val().split('\\').pop();
+                    $(this).next('.custom-file-label').html(fileName);
+            })
+        </script>
     </body>
     <!-- based on the https://startbootstrap.com/templates/sb-admin/ template -->
 </html>

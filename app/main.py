@@ -2,10 +2,10 @@ import requests
 import re
 import os
 from flask import Flask, flash, jsonify, request, Response, redirect, url_for, abort, render_template
-from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user
+from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 from pandas import read_excel
 from werkzeug.utils import secure_filename
-import sqlite3
+import MySQLdb
 import config
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -26,12 +26,9 @@ login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = "login"
 
-
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
 
 app.config.update(
     SECRET_KEY = config.SECRET_KEY
@@ -59,7 +56,7 @@ def home():
         # if user does not select file, browser also
         # submit an empty part without filename
         if file.filename == '':
-            flash('No selected file', 'danger')            
+            flash('No selected file', 'danger')
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
@@ -69,7 +66,7 @@ def home():
             flash(f'Imported {rows} rows of serials and {failures} rows of failure', 'success')
             os.remove(file_path)
             return redirect('/')
-    
+
     return render_template('index.html')
 
 
@@ -77,6 +74,8 @@ def home():
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
 def login():
+    if current_user.is_authenticated:
+        return redirect('/')
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
@@ -165,53 +164,55 @@ def import_database_from_excel(filepath):
     # TODO: make sure that the data is imported correctly, we need to backup the old one
     # TODO: do some normaliziation
 
-    ## our sqlite database wil contain two tables: serials and invalids
-    conn = sqlite3.connect(config.DATABASE_FILE_PATH)
-    cur = conn.cursor()
+    db = MySQLdb.connect(host=config.MYSQL_HOST, user=config.MYSQL_USERNAME,
+            passwd=config.MYSQL_PASSWORD, db=config.MYSQL_DB_NAME)
+
+    cur = db.cursor()
 
     # remove the serials table if exists, then craete the new one
-    cur.execute('DROP TABLE IF EXISTS serials')
-    cur.execute("""CREATE TABLE IF NOT EXISTS serials (
+    cur.execute('DROP TABLE IF EXISTS serials;')
+    cur.execute("""CREATE TABLE serials (
         id INTEGER PRIMARY KEY,
-        ref TEXT,
-        desc TEXT,
-        start_serial TEXT,
-        end_serial TEXT,
-        date DATE);""")
-    conn.commit()
+        ref VARCHAR(200),
+        description VARCHAR(200),
+        start_serial CHAR(30),
+        end_serial CHAR(30),
+        date DATETIME);""")
+    db.commit()
 
     df = read_excel(filepath, 0)
     serials_counter = 0
-    for index, (line, ref, desc, start_serial, end_serial, date) in df.iterrows():
+    for index, (line, ref, description, start_serial, end_serial, date) in df.iterrows():
         start_serial = normalize_string(start_serial)
         end_serial = normalize_string(end_serial)
-        query = f'INSERT INTO serials VALUES ("{line}", "{ref}", "{desc}", "{start_serial}", "{end_serial}", "{date}");'
-        cur.execute(query)
+        cur.execute("INSERT INTO serials VALUES (%s, %s, %s, %s, %s, %s);", (
+          line, ref, description, start_serial, end_serial, date)
+        )
         # TODO: do some more error handling
         if serials_counter % 10 == 0:
-            conn.commit()
+            db.commit()
         serials_counter += 1
-    conn.commit()
+    db.commit()
 
     # now lets save the invalid serials.
 
     # remove the invalid table if exists, then craete the new one
-    cur.execute('DROP TABLE IF EXISTS invalids')
-    cur.execute("""CREATE TABLE IF NOT EXISTS invalids (
-        invalid_serial TEXT PRIMARY KEY);""")
-    conn.commit()
+    cur.execute('DROP TABLE IF EXISTS invalids;')
+    cur.execute("""CREATE TABLE invalids (
+        invalid_serial CHAR(30));""")
+    db.commit()
     invalid_counter = 0
     df = read_excel(filepath, 1)
     for index, (failed_serial, ) in df.iterrows():
-        query = f'INSERT INTO invalids VALUES ("{failed_serial}")'
-        cur.execute(query)
+        failed_serial = normalize_string(failed_serial)
+        cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial, ))
         # TODO: do some more error handling
         if invalid_counter % 10 == 0:
-            conn.commit()
+            db.commit()
         invalid_counter += 1
-    conn.commit()
+    db.commit()
 
-    conn.close()
+    db.close()
 
     return (serials_counter, invalid_counter)
 
@@ -219,18 +220,23 @@ def check_serial(serial):
     """ this function will get one serial number and return appropriate
     answer to that, after consulting the db
     """
-    conn = sqlite3.connect(config.DATABASE_FILE_PATH)
-    cur = conn.cursor()
 
-    query = f"SELECT * FROM invalids WHERE invalid_serial == '{serial}'"
-    results = cur.execute(query)
-    if len(results.fetchall()) > 0:
+    db = MySQLdb.connect(host=config.MYSQL_HOST,
+                         user=config.MYSQL_USERNAME,
+                         passwd=config.MYSQL_PASSWORD,
+                         db=config.MYSQL_DB_NAME)
+
+    cur = db.cursor()
+
+    results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial, ))
+    if results > 0:
         return 'this serial is among failed ones' #TODO: return the string provided by the customer
 
-    query = f"SELECT * FROM serials WHERE start_serial <= '{serial}' and end_serial >= '{serial}';"
-    results = cur.execute(query)
-    if len(results.fetchall()) == 1:
-        return 'I found your serial' # TODO: return the string provided by the customer
+    results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
+    if results == 1:
+        ret = cur.fetchone()
+        desc = ret[2]
+        return 'I found your serial: ' + desc # TODO: return the string provided by the customer
 
     return 'it was not in the db'
 
