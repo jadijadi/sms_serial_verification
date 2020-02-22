@@ -126,12 +126,9 @@ def send_sms(receptor, message):
     print(f"message *{message}* sent. status code is {res.status_code}")
 
 def normalize_string(data, fixed_size=30):
-    from_persian_char = '۱۲۳۴۵۶۷۸۹۰'
-    from_arabic_char = '١٢٣٤٥٦٧٨٩٠'
-    to_char = '1234567890'
-    for i in range(len(to_char)):
-        data = data.replace(from_persian_char[i], to_char[i])
-        data = data.replace(from_arabic_char[i], to_char[i])
+    for c in data:
+        if c.isdigit():
+            data = data.replace(c, f'{int(c)}') # replace persian/arabic digits to english digits
     data = data.upper()
     data = re.sub(r'\W+', '', data)  # remove any non alphanumeric character
     all_alpha = ''
