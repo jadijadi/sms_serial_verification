@@ -239,7 +239,7 @@ def check_serial(serial):
         return 'I found your serial: ' + desc # TODO: return the string provided by the customer
 
     return 'it was not in the db'
-
+    db.close()
 
 @app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
 def process():
