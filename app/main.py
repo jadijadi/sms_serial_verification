@@ -250,6 +250,8 @@ def process():
     send_sms(sender, answer)
     ret = {"message": "processed"}
     return jsonify(ret), 200
-
+@app.errorhandler(404)
+def page_not_found(n):
+    return render_template('404.html'), 404
 if __name__ == "__main__":
     app.run("0.0.0.0", 5000, debug=True)
