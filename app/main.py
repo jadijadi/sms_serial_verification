@@ -1,5 +1,6 @@
 import re
 import os
+import time
 import requests
 from flask import Flask, flash, jsonify, request, Response, redirect, url_for, abort, render_template
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
@@ -172,7 +173,6 @@ def import_database_from_excel(filepath):
     # Row	Reference Number	Description	Start Serial	End Serial	Date
 
     # TODO: make sure that the data is imported correctly, we need to backup the old one
-    # TODO: do some normaliziation
 
     db = MySQLdb.connect(host=config.MYSQL_HOST, user=config.MYSQL_USERNAME,
             passwd=config.MYSQL_PASSWORD, db=config.MYSQL_DB_NAME)
@@ -265,9 +265,22 @@ def process():
     data = request.form
     sender = data["from"]
     message = normalize_string(data["message"])
-    print(f'received {message} from {sender}') #TODO: logging
+    print(f'received {message} from {sender}') 
 
     answer = check_serial(message)
+
+    db = MySQLdb.connect(host=config.MYSQL_HOST,
+                         user=config.MYSQL_USERNAME,
+                         passwd=config.MYSQL_PASSWORD,
+                         db=config.MYSQL_DB_NAME)
+
+    cur = db.cursor()
+
+    now = time.strftime('%Y-%m-%d %H:%M:%S')
+    cur.execute("INSERT INTO PROCESSED_SMS (sender, message, answer, date) VALUES (%s, %s, %s, %s)", 
+                (sender, message, answer, now))
+    db.commit()
+    db.close() 
 
     send_sms(sender, answer)
     ret = {"message": "processed"}
@@ -278,4 +291,5 @@ def page_not_found(e):
     return render_template('404.html'), 404
 
 if __name__ == "__main__":
+    #import_database_from_excel('../data.xlsx')
     app.run("0.0.0.0", 5000, debug=True)

@@ -1,5 +1,12 @@
 # sms_verification
+This project is done for Altech as a educational series.
 
+You should rename the `config.py.sample` to `config.py` and do proper changes.
+
+## DB
+db configs are in config.py, but you also need to add this table to the database manually:
+
+    CREATE TABLE PROCESSED_SMS (sender CHAR(20), message VARCHAR(400), answer VARCHAR(400), date DATETIME);
 
 ## TODO
 - [x] Farhad seifi https://ngrok.com/
@@ -30,6 +37,6 @@
 - [ ] proper texts are provided in Downloads/sms_reply_texts
 - [x] is it possible to check a serial from the gui?
 - [x] dummy message for end to end test via SMS
-- [ ] log all incomming smss
+- [x] log all incomming smss
 - [ ] Atomic problem when I'm commiting every 10 inserts
 - [ ] show smss at the bottom of the Dashboard
