@@ -5,7 +5,6 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.swp
-config.py
 # C extensions
 *.so
 
