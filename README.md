@@ -5,7 +5,6 @@
 - [x] Farhad seifi https://ngrok.com/
 - [x] add db path to config.py.sample
 - [x] do more while normalizing, specially against SQLInjection. remove all non alpha numerical
-- [ ] Atomic problem when I'm commiting every 10 inserts
 - [x] some health check url
 - [x] there is problem with JJ1000000 and JJ100
 - [x] create requirements.txt (pip freeze)
@@ -29,7 +28,8 @@
 - [ ] count the failed insertions in db
 - [x] regenerate requirements.txt with MySQLdb
 - [ ] proper texts are provided in Downloads/sms_reply_texts
-- [ ] is it possible to check a serial from the gui?
+- [x] is it possible to check a serial from the gui?
 - [x] dummy message for end to end test via SMS
 - [ ] log all incomming smss
-
+- [ ] Atomic problem when I'm commiting every 10 inserts
+- [ ] show smss at the bottom of the Dashboard

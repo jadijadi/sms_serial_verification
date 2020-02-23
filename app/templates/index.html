@@ -108,8 +108,18 @@
                         <div class="row">
                             <div class="col-xl-6">
                                 <div class="card mb-4">
-                                    <div class="card-header"><i class="fas fa-chart-area mr-1"></i>Area Chart Example</div>
-                                    <div class="card-body"><canvas id="myAreaChart" width="100%" height="40"></canvas></div>
+                                    <div class="card-header"><i class="fas fa-chart-area mr-1"></i>Check one serial</div>
+                                    <div class="card-body">
+                                        <form method="POST" action="/check_one_serial" class="d-none d-md-inline-block form-inline ml-auto mr-0 mr-md-3 my-2 my-md-0">
+                                            <div class="input-group">
+                                                <input class="form-control" type="text" placeholder="Serial to check" aria-label="Search"
+                                                    aria-describedby="basic-addon2" name="serial" />
+                                                <div class="input-group-append">
+                                                    <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
+                                                </div>
+                                            </div>
+                                        </form>                                    
+                                    </div>
                                 </div>
                             </div>
                             <div class="col-xl-6">
@@ -118,12 +128,12 @@
                                     <div class="card-body">                                        
                                         <form method=post enctype=multipart/form-data> 
                                             <div class="input-group">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group" id="inputGroupFileAddon01"><input type="Submit" value="Upload"></span>
-                                            </div>
                                             <div class="custom-file">
                                                 <input type="file" class="custom-file-input" id="inputGroupFile01" aria-describedby="inputGroupFileAddon01" name="file">
                                                 <label class="custom-file-label" for="inputGroupFile01">Choose file</label>
+                                            </div>
+                                            <div class="input-group-prepend">
+                                                <span class="input-group" id="inputGroupFileAddon01"><input type="Submit" value="Upload"></span>
                                             </div>
                                             </div>
                                         </form>
