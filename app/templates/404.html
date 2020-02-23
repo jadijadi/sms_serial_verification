@@ -7,7 +7,7 @@
         <meta name="description" content="" />
         <meta name="author" content="" />
         <title>404 Error - SB Admin</title>
-        <link href="/static/css/styles.css" rel="stylesheet" />
+        <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.min.js" crossorigin="anonymous"></script>
     </head>
     <body>
@@ -18,9 +18,9 @@
                         <div class="row justify-content-center">
                             <div class="col-lg-6">
                                 <div class="text-center mt-4">
-                                    <img class="mb-4 img-error" src="assets/img/error-404-monochrome.svg" />
+                                    <img class="mb-4 img-error" src="{{ url_for('static', filename='assets/img/error-404-monochrome.svg') }}" />
                                     <p class="lead">This requested URL was not found on this server.</p>
-                                    <a href="index.html"><i class="fas fa-arrow-left mr-1"></i>Return to Dashboard</a>
+                                    <a href="/"><i class="fas fa-arrow-left mr-1"></i>Return to Dashboard</a>
                                 </div>
                             </div>
                         </div>
@@ -44,6 +44,6 @@
         </div>
         <script src="https://code.jquery.com/jquery-3.4.1.min.js" crossorigin="anonymous"></script>
         <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-        <script src="/static/js/scripts.js"></script>
+        <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
     </body>
 </html>
