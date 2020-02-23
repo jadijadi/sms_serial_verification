@@ -74,18 +74,32 @@ def home():
                              db=config.MYSQL_DB_NAME)
 
     cur = db.cursor()
+
+
+    # get last 5000 smss
     cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
     all_smss = cur.fetchall()
     smss = []
     count = 0
     for sms in all_smss:
-        count += 1
-        for i in range(1000):
-            count += 1
-            sender, message, answer, date = sms
-            smss.append({'sender': sender + '_' + str(count), 'message': message, 'answer': answer, 'date': date})
+        status, sender, message, answer, date = sms
+        smss.append({'status': status, 'sender': sender + '_' + str(count), 'message': message, 'answer': answer, 'date': date})
 
-    return render_template('index.html', data ={'smss': smss})
+
+    # collect some stats for the GUI
+    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
+    num_ok = cur.fetchone()[0]
+
+    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
+    num_failure = cur.fetchone()[0]
+
+    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
+    num_dboule = cur.fetchone()[0]
+
+    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
+    num_notfound = cur.fetchone()[0]
+
+    return render_template('index.html', data ={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_dboule, 'notfound': num_notfound})
 
 
 
@@ -110,8 +124,8 @@ def login():
 @login_required
 def check_one_serial():
     serial_to_check = request.form["serial"]
-    answer = check_serial(normalize_string(serial_to_check))
-    flash(answer, 'info')
+    status, answer = check_serial(normalize_string(serial_to_check))
+    flash(f'{status} - {answer}', 'info')
 
     return redirect('/')
 
@@ -204,7 +218,7 @@ def import_database_from_excel(filepath):
         description VARCHAR(200),
         start_serial CHAR(30),
         end_serial CHAR(30),
-        date DATETIME);""")
+        date DATETIME, INDEX(start_serial, end_serial));""")
     db.commit()
 
     df = read_excel(filepath, 0)
@@ -226,7 +240,7 @@ def import_database_from_excel(filepath):
     # remove the invalid table if exists, then craete the new one
     cur.execute('DROP TABLE IF EXISTS invalids;')
     cur.execute("""CREATE TABLE invalids (
-        invalid_serial CHAR(30));""")
+        invalid_serial CHAR(30), INDEX(invalid_serial));""")
     db.commit()
     invalid_counter = 0
     df = read_excel(filepath, 1)
@@ -258,20 +272,20 @@ def check_serial(serial):
     results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial, ))
     if results > 0:
         db.close()
-        return 'this serial is among failed ones' #TODO: return the string provided by the customer
+        return 'FAILURE', 'this serial is among failed ones' #TODO: return the string provided by the customer
 
     results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
     if results > 1:
         db.close()
-        return 'I found your serial' # TODO: fix with proper message
+        return 'DOUBLE', 'I found your serial' # TODO: fix with proper message
     elif results == 1:
         ret = cur.fetchone()
         desc = ret[2]
         db.close()
-        return 'I found your serial: ' + desc # TODO: return the string provided by the customer
+        return 'OK', 'I found your serial: ' + desc # TODO: return the string provided by the customer
 
     db.close()
-    return 'it was not in the db'
+    return 'NOT-FOUND', 'it was not in the db'
 
 
 @app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
@@ -284,7 +298,7 @@ def process():
     message = normalize_string(data["message"])
     print(f'received {message} from {sender}')
 
-    answer = check_serial(message)
+    status, answer = check_serial(message)
 
     db = MySQLdb.connect(host=config.MYSQL_HOST,
                          user=config.MYSQL_USERNAME,
@@ -294,8 +308,8 @@ def process():
     cur = db.cursor()
 
     now = time.strftime('%Y-%m-%d %H:%M:%S')
-    cur.execute("INSERT INTO PROCESSED_SMS (sender, message, answer, date) VALUES (%s, %s, %s, %s)",
-                (sender, message, answer, now))
+    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
+                (status, sender, message, answer, now))
     db.commit()
     db.close()
 
@@ -309,4 +323,9 @@ def page_not_found(e):
 
 if __name__ == "__main__":
     #import_database_from_excel('../data.xlsx')
+    #process('sender', normalize_string('JJ1000000'))
+    #process('sender', normalize_string('JM101'))
+    #process('sender', normalize_string('JJ101'))
+    #process('sender', normalize_string('chert'))
+    #process('sender', normalize_string('JM199'))
     app.run("0.0.0.0", 5000, debug=True)

@@ -6,7 +6,7 @@ You should rename the `config.py.sample` to `config.py` and do proper changes.
 ## DB
 db configs are in config.py, but you also need to add this table to the database manually:
 
-    CREATE TABLE PROCESSED_SMS (sender CHAR(20), message VARCHAR(400), answer VARCHAR(400), date DATETIME);
+    CREATE TABLE PROCESSED_SMS (status ENUM('OK', 'FAILURE', 'DOUBLE', 'NOT-FOUND'), sender CHAR(20), message VARCHAR(400), answer VARCHAR(400), date DATETIME INDEX(date, status));
 
 ## TODO
 - [x] Farhad seifi https://ngrok.com/
@@ -40,5 +40,6 @@ db configs are in config.py, but you also need to add this table to the database
 - [x] log all incomming smss
 - [ ] Atomic problem when I'm commiting every 10 inserts
 - [x] show smss at the bottom of the Dashboard
-- [ ] define indexes on mysql
-- [ ] add some nubmer to the cards
+- [x] define indexes on mysql
+- [ ] trim too long sms input
+- [x] add some nubmer to the cards
