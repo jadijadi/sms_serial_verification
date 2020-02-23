@@ -142,6 +142,10 @@ def health_check():
     ret = {'message': 'ok'}
     return jsonify(ret), 200
 
+def get_database_connection():
+    return MySQLdb.connect(host=config.MYSQL_HOST, user=config.MYSQL_USERNAME,
+            passwd=config.MYSQL_PASSWORD, db=config.MYSQL_DB_NAME)
+
 def send_sms(receptor, message):
     """ this function will get a MSISDN and a messaage, then
     uses KaveNegar to send sms.
