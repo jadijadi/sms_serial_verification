@@ -68,10 +68,7 @@ def home():
             os.remove(file_path)
             return redirect('/')
 
-    db = MySQLdb.connect(host=config.MYSQL_HOST,
-                             user=config.MYSQL_USERNAME,
-                             passwd=config.MYSQL_PASSWORD,
-                             db=config.MYSQL_DB_NAME)
+    db = get_database_connection()
 
     cur = db.cursor()
     cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
@@ -195,8 +192,7 @@ def import_database_from_excel(filepath):
 
     # TODO: make sure that the data is imported correctly, we need to backup the old one
 
-    db = MySQLdb.connect(host=config.MYSQL_HOST, user=config.MYSQL_USERNAME,
-            passwd=config.MYSQL_PASSWORD, db=config.MYSQL_DB_NAME)
+    db = get_database_connection()
 
     cur = db.cursor()
 
@@ -252,10 +248,7 @@ def check_serial(serial):
     answer to that, after consulting the db
     """
 
-    db = MySQLdb.connect(host=config.MYSQL_HOST,
-                         user=config.MYSQL_USERNAME,
-                         passwd=config.MYSQL_PASSWORD,
-                         db=config.MYSQL_DB_NAME)
+    db = get_database_connection()
 
     cur = db.cursor()
 
@@ -290,10 +283,7 @@ def process():
 
     answer = check_serial(message)
 
-    db = MySQLdb.connect(host=config.MYSQL_HOST,
-                         user=config.MYSQL_USERNAME,
-                         passwd=config.MYSQL_PASSWORD,
-                         db=config.MYSQL_DB_NAME)
+    db = get_database_connection()
 
     cur = db.cursor()
 
