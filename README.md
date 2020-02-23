@@ -39,4 +39,6 @@ db configs are in config.py, but you also need to add this table to the database
 - [x] dummy message for end to end test via SMS
 - [x] log all incomming smss
 - [ ] Atomic problem when I'm commiting every 10 inserts
-- [ ] show smss at the bottom of the Dashboard
+- [x] show smss at the bottom of the Dashboard
+- [ ] define indexes on mysql
+- [ ] add some nubmer to the cards

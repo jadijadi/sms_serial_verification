@@ -68,7 +68,24 @@ def home():
             os.remove(file_path)
             return redirect('/')
 
-    return render_template('index.html')
+    db = MySQLdb.connect(host=config.MYSQL_HOST,
+                             user=config.MYSQL_USERNAME,
+                             passwd=config.MYSQL_PASSWORD,
+                             db=config.MYSQL_DB_NAME)
+
+    cur = db.cursor()
+    cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
+    all_smss = cur.fetchall()
+    smss = []
+    count = 0
+    for sms in all_smss:
+        count += 1
+        for i in range(1000):
+            count += 1
+            sender, message, answer, date = sms
+            smss.append({'sender': sender + '_' + str(count), 'message': message, 'answer': answer, 'date': date})
+
+    return render_template('index.html', data ={'smss': smss})
 
 
 
@@ -265,7 +282,7 @@ def process():
     data = request.form
     sender = data["from"]
     message = normalize_string(data["message"])
-    print(f'received {message} from {sender}') 
+    print(f'received {message} from {sender}')
 
     answer = check_serial(message)
 
@@ -277,10 +294,10 @@ def process():
     cur = db.cursor()
 
     now = time.strftime('%Y-%m-%d %H:%M:%S')
-    cur.execute("INSERT INTO PROCESSED_SMS (sender, message, answer, date) VALUES (%s, %s, %s, %s)", 
+    cur.execute("INSERT INTO PROCESSED_SMS (sender, message, answer, date) VALUES (%s, %s, %s, %s)",
                 (sender, message, answer, now))
     db.commit()
-    db.close() 
+    db.close()
 
     send_sms(sender, answer)
     ret = {"message": "processed"}
