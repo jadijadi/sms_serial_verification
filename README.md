@@ -14,8 +14,6 @@ This project is done for Altech as a educational series.
 
 ### Or you can use Dockerfile to deploy it to docker
 
-## DB
-
 ## TODO
 - [x] Farhad seifi https://ngrok.com/
 - [x] add db path to config.py.sample
