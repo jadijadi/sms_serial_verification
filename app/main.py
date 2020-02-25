@@ -143,17 +143,6 @@ def page_not_found(error):
     return redirect('/login')
 
 
-# callback to reload the user object
-@login_manager.user_loader
-def load_user(userid):
-    return User(userid)
-
-
-@app.route('/v1/ok')
-def health_check():
-    ret = {'message': 'ok'}
-    return jsonify(ret), 200
-
 def get_database_connection():
     return MySQLdb.connect(host=config.MYSQL_HOST, user=config.MYSQL_USERNAME,
             passwd=config.MYSQL_PASSWORD, db=config.MYSQL_DB_NAME)
