@@ -133,18 +133,20 @@ def check_one_serial():
 
     return redirect('/')
 
-# somewhere to logout
+
 @app.route("/logout")
 @login_required
 def logout():
+    """ logs out the admin user"""
     logout_user()
     flash('Logged out', 'success')
     return redirect('/login')
 
 
-# handle login failed
+#
 @app.errorhandler(401)
 def page_not_found(error):
+    """ handling login failures"""
     flash('Login problem', 'danger')
     return redirect('/login')
 
