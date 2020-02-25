@@ -2,6 +2,7 @@ import re
 import os
 import time
 import requests
+
 from flask import Flask, flash, jsonify, request, Response, redirect, url_for, abort, render_template
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 from pandas import read_excel
@@ -12,9 +13,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
-limiter = Limiter(app,
-                  key_func=get_remote_address
-                )
+limiter = Limiter(app, key_func=get_remote_address)
 
 MAX_FLASH = 10
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
@@ -29,14 +28,17 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 login_manager.login_message_category = 'danger'
 
-def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-app.config.update(
-    SECRET_KEY = config.SECRET_KEY
-)
+def allowed_file(filename):
+    """ checks the extension of the passed filename to be in the allowed extensions"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+
+app.config.update(SECRET_KEY=config.SECRET_KEY)
+
+
 class User(UserMixin):
+    """ A minimal and singleton user class used only for administrative tasks """
     def __init__(self, id):
         self.id = id
 
