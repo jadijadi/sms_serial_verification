@@ -348,7 +348,8 @@ def process():
 
 
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found():
+    """ returns 404 page"""
     return render_template('404.html'), 404
 
 
