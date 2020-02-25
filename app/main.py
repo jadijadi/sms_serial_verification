@@ -322,7 +322,8 @@ def check_serial(serial):
 @app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
 def process():
     """ this is a call back from KaveNegar. Will get sender and message and
-    will check if it is valid, then answers back
+    will check if it is valid, then answers back.
+    This is secured by 'CALL_BACK_TOKEN' in order to avoid mal-intended calls
     """
     data = request.form
     sender = data["from"]
