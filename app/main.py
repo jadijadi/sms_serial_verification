@@ -107,6 +107,8 @@ def home():
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
 def login():
+    """ user login: only for admin user (system has no other user than admin)
+    Note: there is a 10 tries per minute limitation to admin login to avoid minimize password factoring"""
     if current_user.is_authenticated:
         return redirect('/')
     if request.method == 'POST':
