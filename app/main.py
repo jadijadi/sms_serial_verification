@@ -52,6 +52,8 @@ user = User(0)
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
+    """ creates database if method is post otherwise shows the homepage with some stats
+    see import_database_from_excel() for more details on database creation"""
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -77,7 +79,7 @@ def home():
     cur = db.cursor()
 
 
-    # get last 5000 smss
+    # get last 5000 sms
     cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
     all_smss = cur.fetchall()
     smss = []
@@ -100,7 +102,6 @@ def home():
     num_notfound = cur.fetchone()[0]
 
     return render_template('index.html', data ={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_dboule, 'notfound': num_notfound})
-
 
 
 @app.route("/login", methods=["GET", "POST"])
