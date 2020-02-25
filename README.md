@@ -32,14 +32,15 @@ db configs are in config.py, but you also need to add this table to the database
 - [x] if we have 2 matches on serials, regurn a general OK message
 - [x] add altech logo from Downloads/logo.png ; top left
 - [x] close db connection in check_serial
-- [ ] count the failed insertions in db
+- [x] count the failed insertions in db
 - [x] regenerate requirements.txt with MySQLdb
 - [ ] proper texts are provided in Downloads/sms_reply_texts
 - [x] is it possible to check a serial from the gui?
 - [x] dummy message for end to end test via SMS
 - [x] log all incomming smss
-- [ ] Atomic problem when I'm commiting every 10 inserts
+- [x] Atomic problem when I'm commiting every 10 inserts
 - [x] show smss at the bottom of the Dashboard
 - [x] define indexes on mysql
-- [ ] trim too long sms input
+- [x] trim too long sms input
 - [x] add some nubmer to the cards
+- [x] fix line 83 and 86 :D

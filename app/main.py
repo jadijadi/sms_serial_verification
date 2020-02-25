@@ -80,10 +80,9 @@ def home():
     cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
     all_smss = cur.fetchall()
     smss = []
-    count = 0
     for sms in all_smss:
         status, sender, message, answer, date = sms
-        smss.append({'status': status, 'sender': sender + '_' + str(count), 'message': message, 'answer': answer, 'date': date})
+        smss.append({'status': status, 'sender': sender, 'message': message, 'answer': answer, 'date': date})
 
 
     # collect some stats for the GUI
