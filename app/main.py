@@ -292,8 +292,8 @@ def import_database_from_excel(filepath):
 
 
 def check_serial(serial):
-    """ this function will get one serial number and return appropriate
-    answer to that, after consulting the db
+    """ gets one serial number and returns appropriate
+    answer to that, after looking it up in the db
     """
 
     db = get_database_connection()
