@@ -14,7 +14,7 @@ from flask_limiter.util import get_remote_address
 app = Flask(__name__)
 limiter = Limiter(app,
                   key_func=get_remote_address
-                )
+                  )
 
 MAX_FLASH = 10
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
@@ -29,13 +29,17 @@ login_manager.init_app(app)
 login_manager.login_view = "login"
 login_manager.login_message_category = 'danger'
 
+
 def allowed_file(filename):
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 app.config.update(
-    SECRET_KEY = config.SECRET_KEY
+    SECRET_KEY=config.SECRET_KEY
 )
+
+
 class User(UserMixin):
     def __init__(self, id):
         self.id = id
@@ -45,6 +49,7 @@ class User(UserMixin):
 
 
 user = User(0)
+
 
 # some protected url
 @app.route('/', methods=['GET', 'POST'])
@@ -74,7 +79,6 @@ def home():
 
     cur = db.cursor()
 
-
     # get last 5000 smss
     cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
     all_smss = cur.fetchall()
@@ -82,7 +86,6 @@ def home():
     for sms in all_smss:
         status, sender, message, answer, date = sms
         smss.append({'status': status, 'sender': sender, 'message': message, 'answer': answer, 'date': date})
-
 
     # collect some stats for the GUI
     cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
@@ -97,8 +100,8 @@ def home():
     cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
     num_notfound = cur.fetchone()[0]
 
-    return render_template('index.html', data ={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_dboule, 'notfound': num_notfound})
-
+    return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_dboule,
+                                               'notfound': num_notfound})
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -127,6 +130,7 @@ def check_one_serial():
 
     return redirect('/')
 
+
 # somewhere to logout
 @app.route("/logout")
 @login_required
@@ -154,34 +158,38 @@ def health_check():
     ret = {'message': 'ok'}
     return jsonify(ret), 200
 
+
 def get_database_connection():
+    """connects to the MySQL database and returns the connection"""
     return MySQLdb.connect(host=config.MYSQL_HOST, user=config.MYSQL_USERNAME,
-            passwd=config.MYSQL_PASSWORD, db=config.MYSQL_DB_NAME)
+                           passwd=config.MYSQL_PASSWORD, db=config.MYSQL_DB_NAME)
+
 
 def send_sms(receptor, message):
-    """ this function will get a MSISDN and a messaage, then
-    uses KaveNegar to send sms.
-    """
+    """ gets a MSISDN and a messaage, then uses KaveNegar to send sms."""
     url = f'https://api.kavenegar.com/v1/{config.API_KEY}/sms/send.json'
     data = {"message": message,
             "receptor": receptor}
     res = requests.post(url, data)
     print(f"message *{message}* sent. status code is {res.status_code}")
 
-def normalize_string(serial_number, fixed_size=30):
 
+def normalize_string(serial_number, fixed_size=30):
+    """ gets a serial number and standardize it as following:
+    >> converts(removes others) all chars to English upper letters and numbers
+    >> adds zeros between letters and numbers to make it fixed length """
     # remove any non-alphanumeric character
     serial_number = re.sub(r'\W+', '', serial_number)
     serial_number = serial_number.upper()
-    
-    #replace persian and arabic numeric chars to standard format
+
+    # replace persian and arabic numeric chars to standard format
     from_persian_char = '۱۲۳۴۵۶۷۸۹۰'
     from_arabic_char = '١٢٣٤٥٦٧٨٩٠'
     to_char = '1234567890'
     for i in range(len(to_char)):
         serial_number = serial_number.replace(from_persian_char[i], to_char[i])
         serial_number = serial_number.replace(from_arabic_char[i], to_char[i])
-    
+
     # separate the alphabetic and numeric part of the serial number
     all_alpha = ''
     all_digit = ''
@@ -196,6 +204,7 @@ def normalize_string(serial_number, fixed_size=30):
     serial_number = all_alpha + '0' * missing_zeros + all_digit
 
     return serial_number
+
 
 def import_database_from_excel(filepath):
     """ gets an excel file name and imports lookup data (data and failures) from it
@@ -240,8 +249,8 @@ def import_database_from_excel(filepath):
             start_serial = normalize_string(start_serial)
             end_serial = normalize_string(end_serial)
             cur.execute("INSERT INTO serials VALUES (%s, %s, %s, %s, %s, %s);", (
-            line, ref, description, start_serial, end_serial, date)
-            )
+                line, ref, description, start_serial, end_serial, date)
+                        )
             db.commit()
         except:
             total_flashes += 1
@@ -250,11 +259,8 @@ def import_database_from_excel(filepath):
             else:
                 flash(f'Too many errors!', 'danger')
 
-
-
     # now lets save the invalid serials.
-
-    # remove the invalid table if exists, then craete the new one
+    # remove the invalid table if exists, then create the new one
     try:
         cur.execute('DROP TABLE IF EXISTS invalids;')
         cur.execute("""CREATE TABLE invalids (
@@ -265,11 +271,11 @@ def import_database_from_excel(filepath):
 
     invalid_counter = 1
     df = read_excel(filepath, 1)
-    for index, (failed_serial, ) in df.iterrows():
+    for index, (failed_serial,) in df.iterrows():
         invalid_counter += 1
         try:
             failed_serial = normalize_string(failed_serial)
-            cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial, ))
+            cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
             db.commit()
         except:
             total_flashes += 1
@@ -284,29 +290,30 @@ def import_database_from_excel(filepath):
 
     return (serials_counter, invalid_counter)
 
+
 def check_serial(serial):
-    """ this function will get one serial number and return appropriate
-    answer to that, after consulting the db
+    """ gets one serial number and returns appropriate
+    answer to that, after looking it up in the db
     """
 
     db = get_database_connection()
 
     cur = db.cursor()
 
-    results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial, ))
+    results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
     if results > 0:
         db.close()
-        return 'FAILURE', 'this serial is among failed ones' #TODO: return the string provided by the customer
+        return 'FAILURE', 'this serial is among failed ones'  # TODO: return the string provided by the customer
 
     results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
     if results > 1:
         db.close()
-        return 'DOUBLE', 'I found your serial' # TODO: fix with proper message
+        return 'DOUBLE', 'I found your serial'  # TODO: fix with proper message
     elif results == 1:
         ret = cur.fetchone()
         desc = ret[2]
         db.close()
-        return 'OK', 'I found your serial: ' + desc # TODO: return the string provided by the customer
+        return 'OK', 'I found your serial: ' + desc  # TODO: return the string provided by the customer
 
     db.close()
     return 'NOT-FOUND', 'it was not in the db'
@@ -315,7 +322,8 @@ def check_serial(serial):
 @app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
 def process():
     """ this is a call back from KaveNegar. Will get sender and message and
-    will check if it is valid, then answers back
+    will check if it is valid, then answers back.
+    This is secured by 'CALL_BACK_TOKEN' in order to avoid mal-intended calls
     """
     data = request.form
     sender = data["from"]
@@ -338,15 +346,18 @@ def process():
     ret = {"message": "processed"}
     return jsonify(ret), 200
 
+
 @app.errorhandler(404)
-def page_not_found(e):
+def page_not_found():
+    """ returns 404 page"""
     return render_template('404.html'), 404
 
+
 if __name__ == "__main__":
-    #import_database_from_excel('../data.xlsx')
-    #process('sender', normalize_string('JJ1000000'))
-    #process('sender', normalize_string('JM101'))
-    #process('sender', normalize_string('JJ101'))
-    #process('sender', normalize_string('chert'))
-    #process('sender', normalize_string('JM199'))
+    # import_database_from_excel('../data.xlsx')
+    # process('sender', normalize_string('JJ1000000'))
+    # process('sender', normalize_string('JM101'))
+    # process('sender', normalize_string('JJ101'))
+    # process('sender', normalize_string('chert'))
+    # process('sender', normalize_string('JM199'))
     app.run("0.0.0.0", 5000, debug=True)
