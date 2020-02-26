@@ -302,24 +302,20 @@ def check_serial(serial):
 
     db = get_database_connection()
 
-    cur = db.cursor()
+    with db.cursor() as cur:
 
-    results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
-    if results > 0:
-        db.close()
-        return 'FAILURE', 'this serial is among failed ones'  # TODO: return the string provided by the customer
+        results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
+        if results > 0:
+            return 'FAILURE', 'this serial is among failed ones'  # TODO: return the string provided by the customer
 
-    results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
-    if results > 1:
-        db.close()
-        return 'DOUBLE', 'I found your serial'  # TODO: fix with proper message
-    elif results == 1:
-        ret = cur.fetchone()
-        desc = ret[2]
-        db.close()
-        return 'OK', 'I found your serial: ' + desc  # TODO: return the string provided by the customer
+        results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
+        if results > 1:
+            return 'DOUBLE', 'I found your serial'  # TODO: fix with proper message
+        elif results == 1:
+            ret = cur.fetchone()
+            desc = ret[2]
+            return 'OK', 'I found your serial: ' + desc  # TODO: return the string provided by the customer
 
-    db.close()
     return 'NOT-FOUND', 'it was not in the db'
 
 
