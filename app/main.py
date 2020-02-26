@@ -359,15 +359,15 @@ FA1234567
     return 'NOT-FOUND', answer
 
 
-#@app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
-def process(sender, message):
+@app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
+def process():
     """ this is a call back from KaveNegar. Will get sender and message and
     will check if it is valid, then answers back.
     This is secured by 'CALL_BACK_TOKEN' in order to avoid mal-intended calls
     """
-    #data = request.form
-    #sender = data["from"]
-    #message = data["message"]
+    data = request.form
+    sender = data["from"]
+    message = data["message"]
 
     status, answer = check_serial(message)
 
@@ -381,9 +381,9 @@ def process(sender, message):
     db.commit()
     db.close()
 
-    #send_sms(sender, answer)
-    #ret = {"message": "processed"}
-    #return jsonify(ret), 200
+    send_sms(sender, answer)
+    ret = {"message": "processed"}
+    return jsonify(ret), 200
 
 
 @app.errorhandler(404)
@@ -393,10 +393,10 @@ def page_not_found():
 
 
 if __name__ == "__main__":
-    import_database_from_excel('../data.xlsx')
-    process('sender', 'JJ1000000')
-    process('sender', 'JM101')
-    process('sender', 'JJ101')
-    process('sender', 'chert')
-    process('sender', 'JM199')
+    #import_database_from_excel('../data.xlsx')
+    #process('sender', 'JJ1000000')
+    #process('sender', 'JM101')
+    #process('sender', 'JJ101')
+    #process('sender', 'chert')
+    #process('sender', 'JM199')
     app.run("0.0.0.0", 5000, debug=True)
