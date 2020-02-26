@@ -6,7 +6,7 @@ This project is done for Altech as a educational series.
 2. Clone the project `https://github.com/jadijadi/sms_serial_verification && cd sms_serial_verification`
 3. rename the `config.py.sample` to `config.py` and do proper changes.
 4. db configs are in config.py, but you also need to add this table to the database manually:
-`CREATE TABLE PROCESSED_SMS (status ENUM('OK', 'FAILURE', 'DOUBLE', 'NOT-FOUND'), sender CHAR(20), message VARCHAR(400), answer VARCHAR(400), date DATETIME INDEX(date, status));`
+`CREATE TABLE PROCESSED_SMS (status ENUM('OK', 'FAILURE', 'DOUBLE', 'NOT-FOUND'), sender CHAR(20), message VARCHAR(400), answer VARCHAR(400), date DATETIME, INDEX(date, status));`
 5. Create a virtualenve named build using `virtualenv -p python3 build`
 6. Connect to virtualenv using `source build/bin/activate`
 7. Install packages using `pip3 install -r requirements.txt`
@@ -40,7 +40,7 @@ This project is done for Altech as a educational series.
 - [x] close db connection in check_serial
 - [x] count the failed insertions in db
 - [x] regenerate requirements.txt with MySQLdb
-- [ ] proper texts are provided in Downloads/sms_reply_texts
+- [x] proper texts are provided in Downloads/sms_reply_texts
 - [x] is it possible to check a serial from the gui?
 - [x] dummy message for end to end test via SMS
 - [x] log all incomming smss

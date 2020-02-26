@@ -2,7 +2,7 @@ import re
 import os
 import time
 import requests
-
+import datetime
 from flask import Flask, flash, jsonify, request, Response, redirect, url_for, abort, render_template
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 from pandas import read_excel
@@ -128,7 +128,7 @@ def login():
 def check_one_serial():
     """ to check whether a serial number is valid or not"""
     serial_to_check = request.form["serial"]
-    status, answer = check_serial(normalize_string(serial_to_check))
+    status, answer = check_serial(serial_to_check)
     flash(f'{status} - {answer}', 'info')
 
     return redirect('/')
@@ -165,8 +165,11 @@ def health_check():
 
 def get_database_connection():
     """connects to the MySQL database and returns the connection"""
-    return MySQLdb.connect(host=config.MYSQL_HOST, user=config.MYSQL_USERNAME,
-                           passwd=config.MYSQL_PASSWORD, db=config.MYSQL_DB_NAME)
+    return MySQLdb.connect(host=config.MYSQL_HOST,
+                           user=config.MYSQL_USERNAME,
+                           passwd=config.MYSQL_PASSWORD,
+                           db=config.MYSQL_DB_NAME,
+                           charset='utf8')
 
 
 def send_sms(receptor, message):
@@ -224,8 +227,6 @@ def import_database_from_excel(filepath):
     # df contains lookup data in the form of
     # Row	Reference Number	Description	Start Serial	End Serial	Date
 
-    # TODO: make sure that the data is imported correctly, we need to backup the old one
-
     db = get_database_connection()
 
     cur = db.cursor()
@@ -246,9 +247,10 @@ def import_database_from_excel(filepath):
 
     df = read_excel(filepath, 0)
     serials_counter = 1
+    line_number = 1
     total_flashes = 0
     for index, (line, ref, description, start_serial, end_serial, date) in df.iterrows():
-        serials_counter += 1
+        line_number += 1
         try:
             start_serial = normalize_string(start_serial)
             end_serial = normalize_string(end_serial)
@@ -256,10 +258,13 @@ def import_database_from_excel(filepath):
                 line, ref, description, start_serial, end_serial, date)
                         )
             db.commit()
+            serials_counter += 1
         except:
             total_flashes += 1
             if total_flashes < MAX_FLASH:
-                flash(f'Error insering line {serials_counter} from serials sheet SERIALS', 'danger')
+                flash(
+                    f'Error insering line {line_number} from serials sheet SERIALS',
+                    'danger')
             else:
                 flash(f'Too many errors!', 'danger')
 
@@ -274,18 +279,20 @@ def import_database_from_excel(filepath):
         flash('Error dropping and creating INVALIDS table', 'danger')
 
     invalid_counter = 1
+    line_number = 1
     df = read_excel(filepath, 1)
     for index, (failed_serial,) in df.iterrows():
-        invalid_counter += 1
+        line_number += 1
         try:
             failed_serial = normalize_string(failed_serial)
             cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
             db.commit()
+            invalid_counter += 1
         except:
             total_flashes += 1
             if total_flashes < MAX_FLASH:
                 flash(
-                    f'Error insering line {invalid_counter} from serials sheet INVALIDS',
+                    f'Error insering line {line_number} from serials sheet INVALIDS',
                     'danger')
             else:
                 flash(f'Too many errors!', 'danger')
@@ -299,6 +306,8 @@ def check_serial(serial):
     """ gets one serial number and returns appropriate
     answer to that, after looking it up in the db
     """
+    original_serial = serial
+    serial = normalize_string(serial)
 
     db = get_database_connection()
 
@@ -307,32 +316,58 @@ def check_serial(serial):
     results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
     if results > 0:
         db.close()
-        return 'FAILURE', 'this serial is among failed ones'  # TODO: return the string provided by the customer
+        answer = f'''{original_serial}
+این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
+ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
+FA1234567
+شماره تماس با بخش پشتیبانی فروش شرکت التک:
+021-22038385'''
+
+        return 'FAILURE', answer
 
     results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
     if results > 1:
         db.close()
-        return 'DOUBLE', 'I found your serial'  # TODO: fix with proper message
+        answer = f'''{original_serial}
+این شماره هولوگرام مورد تایید است.
+برای اطلاعات بیشتر از نوع محصول با بخش پشتیبانی فروش شرکت التک تماس حاصل فرمایید:
+021-22038385'''
+        return 'DOUBLE', answer
     elif results == 1:
         ret = cur.fetchone()
         desc = ret[2]
+        ref_number = ret[1]
+        date = ret[5].date()
+        print(type(date))
         db.close()
-        return 'OK', 'I found your serial: ' + desc  # TODO: return the string provided by the customer
+        answer = f'''{original_serial}
+{ref_number}
+{desc}
+Hologram date: {date}
+Genuine product of Schneider Electric
+شماره تماس با بخش پشتیبانی فروش شرکت التک:
+021-22038385'''
+        return 'OK', answer
 
     db.close()
-    return 'NOT-FOUND', 'it was not in the db'
+    answer = f'''{original_serial}
+این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
+ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
+FA1234567
+شماره تماس با بخش پشتیبانی فروش شرکت التک:
+021-22038385'''
+    return 'NOT-FOUND', answer
 
 
-@app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
-def process():
+#@app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
+def process(sender, message):
     """ this is a call back from KaveNegar. Will get sender and message and
     will check if it is valid, then answers back.
     This is secured by 'CALL_BACK_TOKEN' in order to avoid mal-intended calls
     """
-    data = request.form
-    sender = data["from"]
-    message = normalize_string(data["message"])
-    print(f'received {message} from {sender}')
+    #data = request.form
+    #sender = data["from"]
+    #message = data["message"]
 
     status, answer = check_serial(message)
 
@@ -346,9 +381,9 @@ def process():
     db.commit()
     db.close()
 
-    send_sms(sender, answer)
-    ret = {"message": "processed"}
-    return jsonify(ret), 200
+    #send_sms(sender, answer)
+    #ret = {"message": "processed"}
+    #return jsonify(ret), 200
 
 
 @app.errorhandler(404)
@@ -358,10 +393,10 @@ def page_not_found():
 
 
 if __name__ == "__main__":
-    # import_database_from_excel('../data.xlsx')
-    # process('sender', normalize_string('JJ1000000'))
-    # process('sender', normalize_string('JM101'))
-    # process('sender', normalize_string('JJ101'))
-    # process('sender', normalize_string('chert'))
-    # process('sender', normalize_string('JM199'))
+    import_database_from_excel('../data.xlsx')
+    process('sender', 'JJ1000000')
+    process('sender', 'JM101')
+    process('sender', 'JJ101')
+    process('sender', 'chert')
+    process('sender', 'JM199')
     app.run("0.0.0.0", 5000, debug=True)
