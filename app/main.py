@@ -249,8 +249,8 @@ def import_database_from_excel(filepath):
     serials_counter = 1
     line_number = 1
     total_flashes = 0
-    for index, (line, ref, description, start_serial, end_serial, date) in df.iterrows():
-        line_number += 1
+    for _ , (line, ref, description, start_serial, end_serial, date) in df.iterrows():
+        serials_counter += 1
         try:
             start_serial = normalize_string(start_serial)
             end_serial = normalize_string(end_serial)
@@ -262,10 +262,8 @@ def import_database_from_excel(filepath):
         except:
             total_flashes += 1
             if total_flashes < MAX_FLASH:
-                flash(
-                    f'Error insering line {line_number} from serials sheet SERIALS',
-                    'danger')
-            else:
+                flash(f'Error inserting line {serials_counter} from serials sheet SERIALS', 'danger')
+            elif total_flashes == MAX_FLASH:
                 flash(f'Too many errors!', 'danger')
 
     # now lets save the invalid serials.
@@ -281,8 +279,8 @@ def import_database_from_excel(filepath):
     invalid_counter = 1
     line_number = 1
     df = read_excel(filepath, 1)
-    for index, (failed_serial,) in df.iterrows():
-        line_number += 1
+    for _ , (failed_serial,) in df.iterrows():
+        invalid_counter += 1
         try:
             failed_serial = normalize_string(failed_serial)
             cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
@@ -292,9 +290,9 @@ def import_database_from_excel(filepath):
             total_flashes += 1
             if total_flashes < MAX_FLASH:
                 flash(
-                    f'Error insering line {line_number} from serials sheet INVALIDS',
+                    f'Error inserting line {invalid_counter} from serials sheet INVALIDS',
                     'danger')
-            else:
+            elif total_flashes == MAX_FLASH:
                 flash(f'Too many errors!', 'danger')
 
     db.close()
@@ -311,63 +309,60 @@ def check_serial(serial):
 
     db = get_database_connection()
 
-    cur = db.cursor()
+    with db.cursor() as cur:
+        results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
+        if results > 0:
+            answer = f'''{original_serial}
+    این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
+    ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
+    FA1234567
+    شماره تماس با بخش پشتیبانی فروش شرکت التک:
+    021-22038385'''
 
-    results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
-    if results > 0:
-        db.close()
-        answer = f'''{original_serial}
-این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
-ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
-FA1234567
-شماره تماس با بخش پشتیبانی فروش شرکت التک:
-021-22038385'''
+            return 'FAILURE', answer
 
-        return 'FAILURE', answer
+        results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
+        if results > 1:
+            answer = f'''{original_serial}
+    این شماره هولوگرام مورد تایید است.
+    برای اطلاعات بیشتر از نوع محصول با بخش پشتیبانی فروش شرکت التک تماس حاصل فرمایید:
+    021-22038385'''
+            return 'DOUBLE', answer
+        elif results == 1:
+            ret = cur.fetchone()
+            desc = ret[2]
+            ref_number = ret[1]
+            date = ret[5].date()
+            print(type(date))
+            answer = f'''{original_serial}
+    {ref_number}
+    {desc}
+    Hologram date: {date}
+    Genuine product of Schneider Electric
+    شماره تماس با بخش پشتیبانی فروش شرکت التک:
+    021-22038385'''
+            return 'OK', answer
 
-    results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
-    if results > 1:
-        db.close()
-        answer = f'''{original_serial}
-این شماره هولوگرام مورد تایید است.
-برای اطلاعات بیشتر از نوع محصول با بخش پشتیبانی فروش شرکت التک تماس حاصل فرمایید:
-021-22038385'''
-        return 'DOUBLE', answer
-    elif results == 1:
-        ret = cur.fetchone()
-        desc = ret[2]
-        ref_number = ret[1]
-        date = ret[5].date()
-        print(type(date))
-        db.close()
-        answer = f'''{original_serial}
-{ref_number}
-{desc}
-Hologram date: {date}
-Genuine product of Schneider Electric
-شماره تماس با بخش پشتیبانی فروش شرکت التک:
-021-22038385'''
-        return 'OK', answer
-
-    db.close()
+    
     answer = f'''{original_serial}
-این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
-ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
-FA1234567
-شماره تماس با بخش پشتیبانی فروش شرکت التک:
-021-22038385'''
+    این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
+    ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
+    FA1234567
+    شماره تماس با بخش پشتیبانی فروش شرکت التک:
+    021-22038385'''
+    
     return 'NOT-FOUND', answer
 
 
 @app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
-def process():
+def process(sender, message):
     """ this is a call back from KaveNegar. Will get sender and message and
     will check if it is valid, then answers back.
     This is secured by 'CALL_BACK_TOKEN' in order to avoid mal-intended calls
     """
-    data = request.form
-    sender = data["from"]
-    message = data["message"]
+    #data = request.form
+    #sender = data["from"]
+    #message = data["message"]
 
     status, answer = check_serial(message)
 
@@ -381,9 +376,9 @@ def process():
     db.commit()
     db.close()
 
-    send_sms(sender, answer)
-    ret = {"message": "processed"}
-    return jsonify(ret), 200
+    #send_sms(sender, answer)
+    #ret = {"message": "processed"}
+    #return jsonify(ret), 200
 
 
 @app.errorhandler(404)
@@ -393,10 +388,10 @@ def page_not_found():
 
 
 if __name__ == "__main__":
-    #import_database_from_excel('../data.xlsx')
-    #process('sender', 'JJ1000000')
-    #process('sender', 'JM101')
-    #process('sender', 'JJ101')
-    #process('sender', 'chert')
-    #process('sender', 'JM199')
+    import_database_from_excel('../data.xlsx')
+    process('sender', 'JJ1000000')
+    process('sender', 'JM101')
+    process('sender', 'JJ101')
+    process('sender', 'chert')
+    process('sender', 'JM199')
     app.run("0.0.0.0", 5000, debug=True)
