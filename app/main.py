@@ -96,12 +96,12 @@ def home():
     num_failure = cur.fetchone()[0]
 
     cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
-    num_dboule = cur.fetchone()[0]
+    num_double = cur.fetchone()[0]
 
     cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
     num_notfound = cur.fetchone()[0]
 
-    return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_dboule,
+    return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_double,
                                                'notfound': num_notfound})
 
 @app.route("/login", methods=["GET", "POST"])
