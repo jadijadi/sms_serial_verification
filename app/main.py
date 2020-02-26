@@ -231,6 +231,8 @@ def import_database_from_excel(filepath):
 
     cur = db.cursor()
 
+    total_flashes = 0
+
     # remove the serials table if exists, then craete the new one
     try:
         cur.execute('DROP TABLE IF EXISTS serials;')
@@ -242,15 +244,15 @@ def import_database_from_excel(filepath):
             end_serial CHAR(30),
             date DATETIME, INDEX(start_serial, end_serial));""")
         db.commit()
-    except:
-        flash('problem dropping and creating new table in database', 'danger')
+    except Exception as e:
+        flash(f'problem dropping and creating new table in database; {e}', 'danger')
 
     df = read_excel(filepath, 0)
     serials_counter = 1
     line_number = 1
-    total_flashes = 0
+    
     for _ , (line, ref, description, start_serial, end_serial, date) in df.iterrows():
-        serials_counter += 1
+        line_number += 1        
         try:
             start_serial = normalize_string(start_serial)
             end_serial = normalize_string(end_serial)
@@ -259,10 +261,12 @@ def import_database_from_excel(filepath):
                         )
             db.commit()
             serials_counter += 1
-        except:
+        except Exception as e:
             total_flashes += 1
             if total_flashes < MAX_FLASH:
-                flash(f'Error inserting line {serials_counter} from serials sheet SERIALS', 'danger')
+                flash(
+                    f'Error inserting line {line_number} from serials sheet SERIALS, {e}',
+                    'danger')
             elif total_flashes == MAX_FLASH:
                 flash(f'Too many errors!', 'danger')
 
@@ -273,24 +277,24 @@ def import_database_from_excel(filepath):
         cur.execute("""CREATE TABLE invalids (
             invalid_serial CHAR(30), INDEX(invalid_serial));""")
         db.commit()
-    except:
-        flash('Error dropping and creating INVALIDS table', 'danger')
+    except Exception as e:
+        flash(f'Error dropping and creating INVALIDS table; {e}', 'danger')
 
     invalid_counter = 1
     line_number = 1
     df = read_excel(filepath, 1)
     for _ , (failed_serial,) in df.iterrows():
-        invalid_counter += 1
+        line_number += 1        
         try:
             failed_serial = normalize_string(failed_serial)
             cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
             db.commit()
             invalid_counter += 1
-        except:
+        except Exception as e:
             total_flashes += 1
             if total_flashes < MAX_FLASH:
                 flash(
-                    f'Error inserting line {invalid_counter} from serials sheet INVALIDS',
+                    f'Error inserting line {invalid_counter} from serials sheet INVALIDS; {e}',
                     'danger')
             elif total_flashes == MAX_FLASH:
                 flash(f'Too many errors!', 'danger')
@@ -343,14 +347,14 @@ def check_serial(serial):
     021-22038385'''
             return 'OK', answer
 
-    
+
     answer = f'''{original_serial}
     این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
     ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
     FA1234567
     شماره تماس با بخش پشتیبانی فروش شرکت التک:
     021-22038385'''
-    
+
     return 'NOT-FOUND', answer
 
 

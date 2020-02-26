@@ -50,8 +50,8 @@ This project is done for Altech as a educational series.
 - [x] trim too long sms input
 - [x] add some nubmer to the cards
 - [x] fix line 83 and 86 :D
-- [ ] are we counting inserts correctly?! :D after the merge 
+- [x] are we counting inserts correctly?! :D after the merge 
 - [x] Kavenegar tell which IPs they use on their admin GUI, be we already implemented another solution
-- [ ] show Exception errors
+- [x] show Exception errors
 - [x] message and answer fields should be rtl
 - [ ] is it a good idea to insert rows one by one? not sure. but... what to do :| say 100?
