@@ -145,7 +145,7 @@ def logout():
 
 #
 @app.errorhandler(401)
-def page_not_found(error):
+def unauthorized(error):
     """ handling login failures"""
     flash('Login problem', 'danger')
     return redirect('/login')
@@ -386,7 +386,7 @@ def process():
 
 
 @app.errorhandler(404)
-def page_not_found():
+def page_not_found(error):
     """ returns 404 page"""
     return render_template('404.html'), 404
 
