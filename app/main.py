@@ -261,7 +261,8 @@ def import_database_from_excel(filepath):
             if total_flashes < MAX_FLASH:
                 flash(f'Error insering line {serials_counter} from serials sheet SERIALS', 'danger')
             else:
-                flash(f'Too many errors!', 'danger')
+                flash(f'Too many errors! Stop to try for adding more', 'danger')
+                break
 
     # now lets save the invalid serials.
     # remove the invalid table if exists, then create the new one
@@ -288,7 +289,8 @@ def import_database_from_excel(filepath):
                     f'Error insering line {invalid_counter} from serials sheet INVALIDS',
                     'danger')
             else:
-                flash(f'Too many errors!', 'danger')
+                flash(f'Too many errors! Stop to try for adding more', 'danger')
+                break
 
     db.close()
 
