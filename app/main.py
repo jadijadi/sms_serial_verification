@@ -259,7 +259,7 @@ def import_database_from_excel(filepath):
         except:
             total_flashes += 1
             if total_flashes < MAX_FLASH:
-                flash(f'Error insering line {serials_counter} from serials sheet SERIALS', 'danger')
+                flash(f'Error inserting line {serials_counter} from serials sheet SERIALS', 'danger')
             else:
                 flash(f'Too many errors!', 'danger')
 
@@ -285,7 +285,7 @@ def import_database_from_excel(filepath):
             total_flashes += 1
             if total_flashes < MAX_FLASH:
                 flash(
-                    f'Error insering line {invalid_counter} from serials sheet INVALIDS',
+                    f'Error inserting line {invalid_counter} from serials sheet INVALIDS',
                     'danger')
             else:
                 flash(f'Too many errors!', 'danger')
