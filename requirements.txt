@@ -9,8 +9,11 @@ itsdangerous==1.1.0
 Jinja2==2.11.1
 limits==1.5
 MarkupSafe==1.1.1
+mysql==0.0.2
+mysqlclient==1.4.6
 numpy==1.18.1
 pandas==1.0.1
+pkg-resources==0.0.0
 pycodestyle==2.5.0
 python-dateutil==2.8.1
 pytz==2019.3
