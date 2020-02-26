@@ -14,7 +14,7 @@
     <body class="sb-nav-fixed">
         <nav class="sb-topnav navbar navbar-expand navbar-dark bg-dark">
             <a class="navbar-brand" href="/">
-            <img src="{{ url_for('static', filename='logo.png') }}" height="37px"/>
+            <img src="{{ url_for('static', filename='logo.png') }}" class="img-fluid"/>
             </a><button class="btn btn-link btn-sm order-1 order-lg-0" id="sidebarToggle" href="#"><i class="fas fa-bars"></i></button
             ><!-- Navbar Search-->
             <!-- Navbar-->
@@ -32,7 +32,8 @@
                 <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
                     <div class="sb-sidenav-menu">
                         <div class="nav">
-                            <div class="sb-sidenav-menu-heading">Altech Hologram</div>
+                                <div class="nav-link h4 mt-4 text-secondary">Altech Hologram</div>
+                            <div class="sb-sidenav-menu-heading">Core</div>
                             <a class="nav-link" href="/"
                                 ><div class="sb-nav-link-icon"><i class="fas fa-tachometer-alt"></i></div>
                                 Dashboard</a
@@ -61,8 +62,7 @@
                                 <div class="card bg-success text-white mb-4">
                                     <div class="card-body">{{ data.ok }}</div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white stretched-link" href="#">Total OK SMSs</div>
-                                        <div class="small text-white"></div>
+                                        <div class="small text-white">Total OK SMSs</div>
                                     </div>
                                 </div>
                             </div>
@@ -70,8 +70,7 @@
                                 <div class="card bg-primary text-white mb-4">
                                     <div class="card-body">{{ data.double }}</div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white stretched-link" href="#">Presented in 2 series SMSs</div>
-                                        <div class="small text-white"></div>
+                                        <div class="small text-white">Presented in 2 series SMSs</div>
                                     </div>
                                 </div>
                             </div>
@@ -79,8 +78,7 @@
                                 <div class="card bg-warning text-white mb-4">
                                     <div class="card-body">{{ data.failure }}</div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white stretched-link" href="#">Presented in failure SMSs</div>
-                                        <div class="small text-white"></div>
+                                        <div class="small text-white">Presented in failure SMSs</div>
                                     </div>
                                 </div>
                             </div>
@@ -88,8 +86,7 @@
                                 <div class="card bg-danger text-white mb-4">
                                     <div class="card-body">{{ data.notfound }}</div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white stretched-link" href="#">Total Not-Found SMSs</div>
-                                        <div class="small text-white"></div>
+                                        <div class="small text-white">Total Not-Found SMSs</div>
                                     </div>
                                 </div>
                             </div>
@@ -99,7 +96,7 @@
                                 <div class="card mb-4">
                                     <div class="card-header"><i class="fas fa-chart-area mr-1"></i>Check one serial</div>
                                     <div class="card-body">
-                                        <form method="POST" action="/check_one_serial" class="d-none d-md-inline-block form-inline ml-auto mr-0 mr-md-3 my-2 my-md-0">
+                                        <form method="POST" action="/check_one_serial">
                                             <div class="input-group">
                                                 <input class="form-control" type="text" placeholder="Serial to check" aria-label="Search"
                                                     aria-describedby="basic-addon2" name="serial" />
@@ -121,9 +118,7 @@
                                                 <input type="file" class="custom-file-input" id="inputGroupFile01" aria-describedby="inputGroupFileAddon01" name="file">
                                                 <label class="custom-file-label" for="inputGroupFile01">Choose file</label>
                                             </div>
-                                            <div class="input-group-prepend">
-                                                <span class="input-group" id="inputGroupFileAddon01"><input type="Submit" value="Upload"></span>
-                                            </div>
+                                            <button class="btn btn-primary ml-2" id="inputGroupFileAddon01" type="submit"><i class="fas fa-upload mr-1"></i>Upload</button>
                                             </div>
                                         </form>
                                     </div>
