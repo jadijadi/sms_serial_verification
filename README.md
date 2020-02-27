@@ -56,3 +56,4 @@ This project is done for Altech as a educational series.
 - [x] message and answer fields should be rtl
 - [x] is it a good idea to insert rows one by one? not sure. but... what to do :| say 100?
 - [ ] remove debug mode
+- [ ] fix page titles
