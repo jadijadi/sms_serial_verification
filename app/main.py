@@ -258,8 +258,7 @@ def import_database_from_excel(filepath):
             end_serial = normalize_string(end_serial)
             cur.execute("INSERT INTO serials VALUES (%s, %s, %s, %s, %s, %s);", (
                 line, ref, description, start_serial, end_serial, date)
-                        )
-            db.commit()
+                        )                        
             serials_counter += 1
         except Exception as e:
             total_flashes += 1
@@ -269,6 +268,12 @@ def import_database_from_excel(filepath):
                     'danger')
             elif total_flashes == MAX_FLASH:
                 flash(f'Too many errors!', 'danger')
+        if line_number % 20 == 0:
+            try:
+                db.commit()
+            except Exception as e:
+                flash(f'problem commiting serials into db around {line_number} (or previous 20 ones); {e}')
+    db.commit()
 
     # now lets save the invalid serials.
     # remove the invalid table if exists, then create the new one
@@ -288,17 +293,22 @@ def import_database_from_excel(filepath):
         try:
             failed_serial = normalize_string(failed_serial)
             cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
-            db.commit()
             invalid_counter += 1
         except Exception as e:
             total_flashes += 1
             if total_flashes < MAX_FLASH:
                 flash(
-                    f'Error inserting line {invalid_counter} from serials sheet INVALIDS; {e}',
+                    f'Error inserting line {line_number} from serials sheet SERIALS, {e}',
                     'danger')
             elif total_flashes == MAX_FLASH:
                 flash(f'Too many errors!', 'danger')
 
+        if line_number % 20 == 0:
+            try:
+                db.commit()
+            except Exception as e:
+                flash(f'problem commiting invalid serials into db around {line_number} (or previous 20 ones); {e}')
+    db.commit()
     db.close()
 
     return (serials_counter, invalid_counter)
