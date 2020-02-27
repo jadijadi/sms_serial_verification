@@ -200,11 +200,11 @@ def normalize_string(serial_number, fixed_size=30):
     # separate the alphabetic and numeric part of the serial number
     all_alpha = ''
     all_digit = ''
-    for c in serial_number:
-        if c.isalpha():
-            all_alpha += c
-        elif c.isdigit():
-            all_digit += c
+    for this_char in serial_number:
+        if this_char.isalpha():
+            all_alpha += this_char
+        elif this_char.isdigit():
+            all_digit += this_char
 
     # add zeros between alphabetic and numeric parts to standardaize the length of the serial number
     missing_zeros = fixed_size - len(all_alpha) - len(all_digit)
@@ -327,20 +327,20 @@ def check_serial(serial):
         results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
         if results > 0:
             answer = f'''{original_serial}
-    این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
-    ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
-    FA1234567
-    شماره تماس با بخش پشتیبانی فروش شرکت التک:
-    021-22038385'''
+                این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
+                ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
+                FA1234567
+                شماره تماس با بخش پشتیبانی فروش شرکت التک:
+                021-22038385'''
 
             return 'FAILURE', answer
 
         results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
         if results > 1:
             answer = f'''{original_serial}
-    این شماره هولوگرام مورد تایید است.
-    برای اطلاعات بیشتر از نوع محصول با بخش پشتیبانی فروش شرکت التک تماس حاصل فرمایید:
-    021-22038385'''
+                این شماره هولوگرام مورد تایید است.
+                برای اطلاعات بیشتر از نوع محصول با بخش پشتیبانی فروش شرکت التک تماس حاصل فرمایید:
+                021-22038385'''
             return 'DOUBLE', answer
         elif results == 1:
             ret = cur.fetchone()
@@ -349,21 +349,21 @@ def check_serial(serial):
             date = ret[5].date()
             print(type(date))
             answer = f'''{original_serial}
-    {ref_number}
-    {desc}
-    Hologram date: {date}
-    Genuine product of Schneider Electric
-    شماره تماس با بخش پشتیبانی فروش شرکت التک:
-    021-22038385'''
+                {ref_number}
+                {desc}
+                Hologram date: {date}
+                Genuine product of Schneider Electric
+                شماره تماس با بخش پشتیبانی فروش شرکت التک:
+                021-22038385'''
             return 'OK', answer
 
 
     answer = f'''{original_serial}
-    این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
-    ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
-    FA1234567
-    شماره تماس با بخش پشتیبانی فروش شرکت التک:
-    021-22038385'''
+        این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
+        ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
+        FA1234567
+        شماره تماس با بخش پشتیبانی فروش شرکت التک:
+        021-22038385'''
 
     return 'NOT-FOUND', answer
 
