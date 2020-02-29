@@ -57,3 +57,4 @@ This project is done for Altech as a educational series.
 - [x] is it a good idea to insert rows one by one? not sure. but... what to do :| say 100?
 - [ ] remove debug mode
 - [ ] fix page titles
+- [ ] a way for restful authentication
