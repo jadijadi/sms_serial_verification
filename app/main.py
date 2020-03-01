@@ -408,4 +408,4 @@ if __name__ == "__main__":
     #process('sender', 'JJ101')
     #process('sender', 'chert')
     #process('sender', 'JM199')
-    app.run("0.0.0.0", 5000, debug=True)
+    app.run("0.0.0.0", 5000, debug=True, use_evalex=False)
