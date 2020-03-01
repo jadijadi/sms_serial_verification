@@ -346,7 +346,8 @@ def check_serial(serial):
     with db.cursor() as cur:
         results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
         if results > 0:
-            answer = dedent(f"""{original_serial}
+            answer = dedent(f"""\
+                {original_serial}
                 این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
                 ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
                 FA1234567
@@ -357,7 +358,8 @@ def check_serial(serial):
 
         results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
         if results > 1:
-            answer = dedent(f"""{original_serial}
+            answer = dedent(f"""\
+                {original_serial}
                 این شماره هولوگرام مورد تایید است.
                 برای اطلاعات بیشتر از نوع محصول با بخش پشتیبانی فروش شرکت التک تماس حاصل فرمایید:
                 021-22038385""")
@@ -368,7 +370,8 @@ def check_serial(serial):
             ref_number = ret[1]
             date = ret[5].date()
             print(type(date))
-            answer = dedent(f"""{original_serial}
+            answer = dedent(f"""\
+                {original_serial}
                 {ref_number}
                 {desc}
                 Hologram date: {date}
@@ -378,7 +381,8 @@ def check_serial(serial):
             return 'OK', answer
 
 
-    answer = dedent(f"""{original_serial}
+    answer = dedent(f"""\
+        {original_serial}
         این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
         ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
         FA1234567
