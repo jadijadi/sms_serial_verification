@@ -401,7 +401,30 @@ def page_not_found(error):
     return render_template('404.html'), 404
 
 
+
+def create_sms_table():
+    """Ctreates PROCESSED_SMS table on database if it's not exists."""
+
+    db = get_database_connection()
+
+    cur = db.cursor()
+
+    try:
+        cur.execute("""CREATE TABLE IF NOT EXISTS PROCESSED_SMS (
+            status ENUM('OK', 'FAILURE', 'DOUBLE', 'NOT-FOUND'),
+            sender CHAR(20),
+            message VARCHAR(400),
+            answer VARCHAR(400),
+            date DATETIME, INDEX(date, status));""")
+        db.commit()
+    except Exception as e:
+        flash(f'Error creating PROCESSED_SMS table; {e}', 'danger')
+        
+    db.close()
+
+
 if __name__ == "__main__":
+    create_sms_table()
     #import_database_from_excel('../data.xlsx')
     #process('sender', 'JJ1000000')
     #process('sender', 'JM101')
