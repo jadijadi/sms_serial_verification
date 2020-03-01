@@ -216,8 +216,8 @@ def normalize_string(serial_number, fixed_size=30):
     serial_number = _translate_numbers(persian_numerals, english_numerals, serial_number)
     serial_number = _translate_numbers(arabic_numerals, english_numerals, serial_number)
 
-    all_digit = re.findall("\d", serial_number)
-    all_alpha = re.findall("[A-Z]", serial_number)
+    all_digit = "".join(re.findall("\d", serial_number))
+    all_alpha = "".join(re.findall("[A-Z]", serial_number))
 
     missing_zeros = "0" * (fixed_size - len(all_alpha + all_digit))
 
