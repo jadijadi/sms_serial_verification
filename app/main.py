@@ -205,32 +205,32 @@ def normalize_string(serial_number, fixed_size=30):
     """ gets a serial number and standardize it as following:
     >> converts(removes others) all chars to English upper letters and numbers
     >> adds zeros between letters and numbers to make it fixed length """
-    # remove any non-alphanumeric character
-    serial_number = re.sub(r'\W+', '', serial_number)
+
+    serial_number = _remove_non_alphanum_char(serial_number)
     serial_number = serial_number.upper()
 
-    # replace persian and arabic numeric chars to standard format
-    from_persian_char = '۱۲۳۴۵۶۷۸۹۰'
-    from_arabic_char = '١٢٣٤٥٦٧٨٩٠'
-    to_char = '1234567890'
-    for i in range(len(to_char)):
-        serial_number = serial_number.replace(from_persian_char[i], to_char[i])
-        serial_number = serial_number.replace(from_arabic_char[i], to_char[i])
+    persian_numerals = '۱۲۳۴۵۶۷۸۹۰'
+    arabic_numerals = '١٢٣٤٥٦٧٨٩٠'
+    english_numerals = '1234567890'
 
-    # separate the alphabetic and numeric part of the serial number
-    all_alpha = ''
-    all_digit = ''
-    for c in serial_number:
-        if c.isalpha():
-            all_alpha += c
-        elif c.isdigit():
-            all_digit += c
+    serial_number = _translate_numbers(persian_numerals, english_numerals, serial_number)
+    serial_number = _translate_numbers(arabic_numerals, english_numerals, serial_number)
 
-    # add zeros between alphabetic and numeric parts to standardaize the length of the serial number
-    missing_zeros = fixed_size - len(all_alpha) - len(all_digit)
-    serial_number = all_alpha + '0' * missing_zeros + all_digit
+    all_digit = re.findall("\d", serial_number)
+    all_alpha = re.findall("[A-Z]", serial_number)
 
-    return serial_number
+    missing_zeros = "0" * (fixed_size - len(all_alpha + all_digit))
+
+    return f"{all_alpha}{missing_zeros}{all_digit}"
+
+
+def _remove_non_alphanum_char(string):
+    return re.sub(r'\W+', '', string)
+
+
+def _translate_numbers(current, new, string):
+    translation_table = str.maketrans(current, new)
+    return translation_table.translate(string)
 
 
 def import_database_from_excel(filepath):
