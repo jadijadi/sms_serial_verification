@@ -12,6 +12,15 @@ This project is done for Altech as a educational series.
 7. From the project folder, install packages using `pip install -r requirements.txt`
 8. Now environment is ready. Run it by `python app/main.py`
 
+Example of creating db and granting access:
+```
+CREATE DATABASE smsmysql;
+USE smsmysql;
+CREATE USER 'smsmysql'@'localhost' IDENTIFIED BY 'test' PASSWORD NEVER EXPIRE;
+GRANT ALL PRIVILEGES ON smsmysql.* TO 'smsmysql'@'localhost';
+CREATE TABLE PROCESSED_SMS (status ENUM('OK', 'FAILURE', 'DOUBLE', 'NOT-FOUND'), sender CHAR(20), message VARCHAR(400), answer VARCHAR(400), date DATETIME, INDEX(date, status));
+```
+
 ### Or you can use Dockerfile 
 
 ## TODO
