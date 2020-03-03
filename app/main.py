@@ -59,11 +59,11 @@ app.config.update(SECRET_KEY=config.SECRET_KEY)
 
 class User(UserMixin):
     """ A minimal and singleton user class used only for administrative tasks """
-    def __init__(self, identifier):
-        self.identifier = identifier
+    def __init__(self, id):
+        self.id = id
 
     def __repr__(self):
-        return "%d" % (self.identifier)
+        return "%d" % (self.id)
 
 
 user = User(0)
