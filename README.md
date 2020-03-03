@@ -1,5 +1,18 @@
 # sms_verification
-This project is done for Altech (Schneider Electric Iran) as an educational series.
+
+This project is done for Altech (Schneider Electric Iran) as an educational series. 
+
+این پروژه ای است به سفارش آلتک (اشنایدر الکتریک ایران) برای سنجش صحت شماره سریال ها با پیامک. من پروژه رو ازشون قبول کردم به این شرط که همه مراحلش رو ضبط و منتشر کنم تا نمونه ای باشه از انجام یک پروژه واقعی توسط یک فری لنسر. در این پروژه از تکنولوژی های زیر استفاده می شه:
+
+- پایتون
+- فلسک
+- ای پی آی های دریافت و ارسال اسمس از درگاه پیامک کاوه نگار
+- پاس فندق
+- مای اسکوئل
+
+کل ویدئوها رو می تونین از لینک های زیر ببینین.
+
+Every single step of this project is screen captures and you can follow them [On youtube](https://www.youtube.com/playlist?list=PL-tKrPVkKKE1vAT_rgjnvL_RgFUI9oJ9a) or [On Aparat](https://www.aparat.com/v/fAZSV?playlist=288572). 
 
 ## How to run
 1. Install python3, pip3, virtualenv, MySQL in your system.
