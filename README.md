@@ -1,5 +1,5 @@
 # sms_verification
-This project is done for Altech as a educational series.
+This project is done for Altech (Schneider Electric Iran) as an educational series.
 
 ## How to run
 1. Install python3, pip3, virtualenv, MySQL in your system.
