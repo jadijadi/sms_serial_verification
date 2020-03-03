@@ -282,6 +282,14 @@ def send_sms(receptor, message):
     print(f"message *{message}* sent. status code is {res.status_code}")
 
 
+def _remove_non_alphanum_char(string):
+    return re.sub(r'\W+', '', string)
+
+
+def _translate_numbers(current, new, string):
+    translation_table = str.maketrans(current, new)
+    return string.translate(translation_table)
+
 def normalize_string(serial_number, fixed_size=30):
     """ gets a serial number and standardize it as following:
     >> converts(removes others) all chars to English upper letters and numbers
@@ -304,14 +312,6 @@ def normalize_string(serial_number, fixed_size=30):
 
     return f"{all_alpha}{missing_zeros}{all_digit}"
 
-
-def _remove_non_alphanum_char(string):
-    return re.sub(r'\W+', '', string)
-
-
-def _translate_numbers(current, new, string):
-    translation_table = str.maketrans(current, new)
-    return translation_table.translate(string)
 
 
 def import_database_from_excel(filepath):
