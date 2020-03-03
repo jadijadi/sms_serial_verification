@@ -123,14 +123,14 @@ def login():
         return render_template('login.html')
 
 
-@app.route(f"/v1/{REMOTE_CALL_API_KEY}/check_one_serial/<serial>", methods=["GET"])
+@app.route(f"/v1/{config.REMOTE_CALL_API_KEY}/check_one_serial/<serial>", methods=["GET"])
 def check_one_serial_api(serial):
     """ to check whether a serial number is valid or not using api
     caller should use something like /v1/ABCDSECRET/cehck_one_serial/AA10000
     answer back json which is status = DOUBLE, FAILURE, OK, NOT-FOUND
     """
     status, answer = check_serial(serial)
-    ret = {'status': status}
+    ret = {'status': status, 'answer': answer}
     return jsonify(ret), 200
 
 
