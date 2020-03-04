@@ -1,5 +1,9 @@
 # sms_verification
 
+[![LICENSE](https://img.shields.io/badge/LICENSE-GPL--3.0-green)](https://github.com/jadijadi/sms_serial_verification/blob/master/LICENSE) 
+[![Requirements](https://img.shields.io/badge/Requirements-See%20Here-orange)](https://github.com/ghost1372/sms_serial_verification/blob/patch-1/requirements.txt)
+[![Todo](https://img.shields.io/badge/Todo-See%20Here-success)](https://github.com/jadijadi/sms_serial_verification/blob/master/TODO.md)
+
 This project is done for Altech (Schneider Electric Iran) as an educational series. 
 
 <div dir="rtl"> 
