@@ -25,6 +25,9 @@ Every single step of this project is screen captures and you can follow them [On
 8. Now environment is ready. Run it by `python app/main.py`
 
 ## Example of creating db and granting access:
+
+> Note: this is just a sample. You have to find your own systems commands.
+
 ```
 CREATE DATABASE smsmysql;
 USE smsmysql;

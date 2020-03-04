@@ -165,10 +165,15 @@ def check_one_serial():
     return redirect('/')
 
 
-@app.route("/dbcheck")
+@app.route("/dbcheck/<output>/")
 @login_required
-def db_check():
+def db_check(output):
     """ will do some sanity checks on the db and will flash the errors """
+
+    if output == 'gui':
+        raw_output = False
+    else:
+        raw_output = True
 
     def collision(s1, e1, s2, e2):
         if s2 <= s1 <= e2:
@@ -200,6 +205,9 @@ def db_check():
 
     raw_data = cur.fetchall()
 
+    if raw_output:
+        all_problems = []
+
     data = {}
     flashed = 0
     for row in raw_data:
@@ -207,11 +215,15 @@ def db_check():
         start_serial_alpha, start_serial_digit = separate(start_serial)
         end_serial_alpha, end_serial_digit = separate(end_serial)
         if start_serial_alpha != end_serial_alpha:
-            flashed += 1
-            if flashed < MAX_FLASH:
-                flash(f'start serial and end serial of row {id_row} start with different letters', 'danger')
-            elif flashed == MAX_FLASH:
-                flash('too many starts with different letters', 'danger')
+            if raw_output:                
+                all_problems.append(
+                    f'start serial and end serial of row {id_row} start with different letters')
+            else:
+                flashed += 1
+                if flashed < MAX_FLASH:
+                    flash(f'start serial and end serial of row {id_row} start with different letters', 'danger')
+                elif flashed == MAX_FLASH:
+                    flash('too many starts with different letters', 'danger')
         else:
             if start_serial_alpha not in data:
                 data[start_serial_alpha] = []
@@ -225,13 +237,18 @@ def db_check():
                 id_row1, ss1, es1 = data[letters][i]
                 id_row2, ss2, es2 = data[letters][j]
                 if collision(ss1, es1, ss2, es2):
-                    flashed += 1
-                    if flashed < MAX_FLASH:
-                        flash(f'there is a collision between row ids {id_row1} and {id_row2}', 'danger')
-                    elif flashed == MAX_FLASH:
-                        flash(f'Too many collisions', 'danger')
-
-    return redirect('/')
+                    if raw_output:
+                        all_problems.append(f'there is a collision between row ids {id_row1} and {id_row2}')
+                    else:
+                        flashed += 1
+                        if flashed < MAX_FLASH:
+                            flash(f'there is a collision between row ids {id_row1} and {id_row2}', 'danger')
+                        elif flashed == MAX_FLASH:
+                            flash(f'Too many collisions', 'danger')
+    if raw_output:
+        return "<br>".join(all_problems)
+    else:
+        return redirect('/')
 
 
 @app.route("/logout")
@@ -530,4 +547,4 @@ def create_sms_table():
 
 if __name__ == "__main__":
     create_sms_table()
-    app.run("0.0.0.0", 5000, debug=False)
+    app.run("0.0.0.0", 5000, debug=True)
