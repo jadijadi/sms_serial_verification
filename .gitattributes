@@ -194,5 +194,5 @@ Procfile    text
 *.pyc binary
 
 ## Language
-*.css linguist-language=Python
+* linguist-language=Python
 
