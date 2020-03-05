@@ -1,24 +1,29 @@
-import datetime
+#!/usr/bin/env python3
+"""
+Flask web application provide serial registration with sms.
+"""
+
 import os
 import re
 import time
 from textwrap import dedent
+try:
+    import config
+except ImportError:
+    import sample_config as config
 
 import requests
 from flask import (
     Flask,
-    Response,
     abort,
     flash,
     jsonify,
     redirect,
     render_template,
     request,
-    url_for,
 )
 from werkzeug.utils import secure_filename
 
-import config
 import MySQLdb
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
@@ -32,21 +37,21 @@ from flask_login import (
 )
 from pandas import read_excel
 
-app = Flask(__name__)
-limiter = Limiter(app, key_func=get_remote_address)
+APP = Flask(__name__)
+LIMITER = Limiter(APP, key_func=get_remote_address)
 
 MAX_FLASH = 10
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = config.ALLOWED_EXTENSIONS
 CALL_BACK_TOKEN = config.CALL_BACK_TOKEN
 
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+APP.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # flask-login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "login"
-login_manager.login_message_category = 'danger'
+LOGIN_MANAGER = LoginManager()
+LOGIN_MANAGER.init_app(APP)
+LOGIN_MANAGER.login_view = "login"
+LOGIN_MANAGER.login_message_category = 'danger'
 
 
 def allowed_file(filename):
@@ -54,23 +59,26 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-app.config.update(SECRET_KEY=config.SECRET_KEY)
+APP.config.update(SECRET_KEY=config.SECRET_KEY)
 
 
 class User(UserMixin):
     """ A minimal and singleton user class used only for administrative tasks """
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, user_id):
+        self.user_id = user_id
 
     def __repr__(self):
-        return "%d" % (self.id)
+        return "%d" % (self.user_id)
+
+    def get_id(self):
+        return self.user_id
 
 
-user = User(0)
+USER = User(0)
 
 
 # some protected url
-@app.route('/', methods=['GET', 'POST'])
+@APP.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
     """ creates database if method is post otherwise shows the homepage with some stats
@@ -88,16 +96,16 @@ def home():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file_path = os.path.join(APP.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             rows, failures = import_database_from_excel(file_path)
             flash(f'Imported {rows} rows of serials and {failures} rows of failure', 'success')
             os.remove(file_path)
             return redirect('/')
 
-    db = get_database_connection()
+    data_base = get_database_connection()
 
-    cur = db.cursor()
+    cur = data_base.cursor()
 
 
     # get last 5000 sms
@@ -106,7 +114,8 @@ def home():
     smss = []
     for sms in all_smss:
         status, sender, message, answer, date = sms
-        smss.append({'status': status, 'sender': sender, 'message': message, 'answer': answer, 'date': date})
+        smss.append({'status': status, 'sender': sender, 'message': message, 'answer': answer,
+                     'date': date})
 
     # collect some stats for the GUI
     cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
@@ -121,29 +130,28 @@ def home():
     cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
     num_notfound = cur.fetchone()[0]
 
-    return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_double,
-                                               'notfound': num_notfound})
+    return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure,
+                                               'double': num_double, 'notfound': num_notfound})
 
-@app.route("/login", methods=["GET", "POST"])
-@limiter.limit("10 per minute")
+@APP.route("/login", methods=["GET", "POST"])
+@LIMITER.limit("10 per minute")
 def login():
     """ user login: only for admin user (system has no other user than admin)
-    Note: there is a 10 tries per minute limitation to admin login to avoid minimize password factoring"""
+    Note: there is a 10 tries per minute limitation to admin login to avoid minimize password
+    factoring"""
     if current_user.is_authenticated:
         return redirect('/')
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         if password == config.PASSWORD and username == config.USERNAME:
-            login_user(user)
+            login_user(USER)
             return redirect('/')
-        else:
-            return abort(401)
-    else:
-        return render_template('login.html')
+        return abort(401)
+    return render_template('login.html')
 
 
-@app.route(f"/v1/{config.REMOTE_CALL_API_KEY}/check_one_serial/<serial>", methods=["GET"])
+@APP.route(f"/v1/{config.REMOTE_CALL_API_KEY}/check_one_serial/<serial>", methods=["GET"])
 def check_one_serial_api(serial):
     """ to check whether a serial number is valid or not using api
     caller should use something like /v1/ABCDSECRET/cehck_one_serial/AA10000
@@ -154,7 +162,7 @@ def check_one_serial_api(serial):
     return jsonify(ret), 200
 
 
-@app.route("/check_one_serial", methods=["POST"])
+@APP.route("/check_one_serial", methods=["POST"])
 @login_required
 def check_one_serial():
     """ to check whether a serial number is valid or not"""
@@ -165,19 +173,19 @@ def check_one_serial():
     return redirect('/')
 
 
-@app.route("/dbcheck")
+@APP.route("/dbcheck")
 @login_required
 def db_check():
-    """ will do some sanity checks on the db and will flash the errors """
+    """ will do some sanity checks on the data_base and will flash the errors """
 
-    def collision(s1, e1, s2, e2):
-        if s2 <= s1 <= e2:
+    def collision(start_first_serial, end_first_serial, start_second_serial, end_second_serial):
+        if start_second_serial <= start_first_serial <= end_second_serial:
             return True
-        if s2 <= e1 <= e2:
+        if start_second_serial <= end_first_serial <= end_second_serial:
             return True
-        if s1 <= s2 <= e1:
+        if start_first_serial <= start_second_serial <= end_first_serial:
             return True
-        if s1 <= e2 <= e1:
+        if start_first_serial <= end_second_serial <= end_first_serial:
             return True
         return False
 
@@ -193,8 +201,8 @@ def db_check():
         return alpha_part, int(digit_part)
 
 
-    db = get_database_connection()
-    cur = db.cursor()
+    data_base = get_database_connection()
+    cur = data_base.cursor()
 
     cur.execute("SELECT id, start_serial, end_serial FROM serials")
 
@@ -209,7 +217,8 @@ def db_check():
         if start_serial_alpha != end_serial_alpha:
             flashed += 1
             if flashed < MAX_FLASH:
-                flash(f'start serial and end serial of row {id_row} start with different letters', 'danger')
+                flash(f'start serial and end serial of row {id_row} start with different letters',
+                      'danger')
             elif flashed == MAX_FLASH:
                 flash('too many starts with different letters', 'danger')
         else:
@@ -227,14 +236,15 @@ def db_check():
                 if collision(ss1, es1, ss2, es2):
                     flashed += 1
                     if flashed < MAX_FLASH:
-                        flash(f'there is a collision between row ids {id_row1} and {id_row2}', 'danger')
+                        flash(f'there is a collision between row ids {id_row1} and {id_row2}',
+                              'danger')
                     elif flashed == MAX_FLASH:
                         flash(f'Too many collisions', 'danger')
 
     return redirect('/')
 
 
-@app.route("/logout")
+@APP.route("/logout")
 @login_required
 def logout():
     """ logs out the admin user"""
@@ -244,20 +254,22 @@ def logout():
 
 
 #
-@app.errorhandler(401)
-def unauthorized(error):
+@APP.errorhandler(401)
+def unauthorized(_):
     """ handling login failures"""
     flash('Login problem', 'danger')
     return redirect('/login')
 
 
 # callback to reload the user object
-@login_manager.user_loader
+@LOGIN_MANAGER.user_loader
 def load_user(userid):
+    """Load user
+    """
     return User(userid)
 
 
-@app.route('/v1/ok')
+@APP.route('/v1/ok')
 def health_check():
     """ for system health check. calling it will answer with json message: ok """
     ret = {'message': 'ok'}
@@ -305,7 +317,7 @@ def normalize_string(serial_number, fixed_size=30):
     serial_number = _translate_numbers(persian_numerals, english_numerals, serial_number)
     serial_number = _translate_numbers(arabic_numerals, english_numerals, serial_number)
 
-    all_digit = "".join(re.findall("\d", serial_number))
+    all_digit = "".join(re.findall(r"\d", serial_number))
     all_alpha = "".join(re.findall("[A-Z]", serial_number))
 
     missing_zeros = "0" * (fixed_size - len(all_alpha + all_digit))
@@ -317,10 +329,10 @@ def normalize_string(serial_number, fixed_size=30):
 def import_database_from_excel(filepath):
     """ gets an excel file name and imports lookup data (data and failures) from it
     the first (0) sheet contains serial data like:
-     Row	Reference Number	Description	Start Serial	End Serial	Date
-    and the 2nd (1) contains a column of invalid serials. 
+    Row	Reference Number	Description	Start Serial	End Serial	Date
+    and the 2nd (1) contains a column of invalid serials.
 
-    This data will be writeen into the sqlite database located at config.DATABASE_FILE_PATH
+    This data will be written into the sqlite database located at config.DATABASE_FILE_PATH
     in two tables. "serials" and "invalids"
 
     returns two integers: (number of serial rows, number of invalid rows)
@@ -328,9 +340,9 @@ def import_database_from_excel(filepath):
     # df contains lookup data in the form of
     # Row	Reference Number	Description	Start Serial	End Serial	Date
 
-    db = get_database_connection()
+    data_base = get_database_connection()
 
-    cur = db.cursor()
+    cur = data_base.cursor()
 
     total_flashes = 0
 
@@ -344,37 +356,38 @@ def import_database_from_excel(filepath):
             start_serial CHAR(30),
             end_serial CHAR(30),
             date DATETIME, INDEX(start_serial, end_serial));""")
-        db.commit()
-    except Exception as e:
-        flash(f'problem dropping and creating new table in database; {e}', 'danger')
+        data_base.commit()
+    except Exception as error:
+        flash(f'problem dropping and creating new table in database; {error}', 'danger')
 
-    df = read_excel(filepath, 0)
+    data_file = read_excel(filepath, 0)
     serials_counter = 1
     line_number = 1
-    
-    for _ , (line, ref, description, start_serial, end_serial, date) in df.iterrows():
-        line_number += 1        
+
+    for _, (line, ref, description, start_serial, end_serial, date) in data_file.iterrows():
+        line_number += 1
         try:
             start_serial = normalize_string(start_serial)
             end_serial = normalize_string(end_serial)
             cur.execute("INSERT INTO serials VALUES (%s, %s, %s, %s, %s, %s);", (
                 line, ref, description, start_serial, end_serial, date)
-                        )                        
+                        )
             serials_counter += 1
-        except Exception as e:
+        except Exception as error:
             total_flashes += 1
             if total_flashes < MAX_FLASH:
                 flash(
-                    f'Error inserting line {line_number} from serials sheet SERIALS, {e}',
+                    f'Error inserting line {line_number} from serials sheet SERIALS, {error}',
                     'danger')
             elif total_flashes == MAX_FLASH:
                 flash(f'Too many errors!', 'danger')
         if line_number % 1000 == 0:
             try:
-                db.commit()
-            except Exception as e:
-                flash(f'problem commiting serials into db around {line_number} (or previous 20 ones); {e}')
-    db.commit()
+                data_base.commit()
+            except Exception as error:
+                flash(f'problem committing serials into data_base around {line_number} (or \
+                        previous 20 ones); {error}')
+    data_base.commit()
 
     # now lets save the invalid serials.
     # remove the invalid table if exists, then create the new one
@@ -382,62 +395,66 @@ def import_database_from_excel(filepath):
         cur.execute('DROP TABLE IF EXISTS invalids;')
         cur.execute("""CREATE TABLE invalids (
             invalid_serial CHAR(30), INDEX(invalid_serial));""")
-        db.commit()
-    except Exception as e:
-        flash(f'Error dropping and creating INVALIDS table; {e}', 'danger')
+        data_base.commit()
+    except Exception as error:
+        flash(f'Error dropping and creating INVALIDS table; {error}', 'danger')
 
     invalid_counter = 1
     line_number = 1
-    df = read_excel(filepath, 1)
-    for _ , (failed_serial,) in df.iterrows():
-        line_number += 1        
+    data_file = read_excel(filepath, 1)
+    for _, (failed_serial,) in data_file.iterrows():
+        line_number += 1
         try:
             failed_serial = normalize_string(failed_serial)
             cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
             invalid_counter += 1
-        except Exception as e:
+        except Exception as error:
             total_flashes += 1
             if total_flashes < MAX_FLASH:
                 flash(
-                    f'Error inserting line {line_number} from serials sheet SERIALS, {e}',
+                    f'Error inserting line {line_number} from serials sheet SERIALS, {error}',
                     'danger')
             elif total_flashes == MAX_FLASH:
                 flash(f'Too many errors!', 'danger')
 
         if line_number % 1000 == 0:
             try:
-                db.commit()
-            except Exception as e:
-                flash(f'problem commiting invalid serials into db around {line_number} (or previous 20 ones); {e}')
-    db.commit()
-    db.close()
+                data_base.commit()
+            except Exception as error:
+                flash(f'problem committing invalid serials into data_base around {line_number} (or \
+                        previous 20 ones); {error}')
+    data_base.commit()
+    data_base.close()
 
     return (serials_counter, invalid_counter)
 
 
 def check_serial(serial):
     """ gets one serial number and returns appropriate
-    answer to that, after looking it up in the db
+    answer to that, after looking it up in the data_base
     """
     original_serial = serial
     serial = normalize_string(serial)
 
-    db = get_database_connection()
+    data_base = get_database_connection()
 
-    with db.cursor() as cur:
+    with data_base.cursor() as cur:
         results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
         if results > 0:
             answer = dedent(f"""\
                 {original_serial}
-                این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
-                ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
+                این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید 
+                و یا با واحد پشتیبانی تماس حاصل فرمایید.
+                ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد.
+                مثال:
                 FA1234567
                 شماره تماس با بخش پشتیبانی فروش شرکت التک:
                 021-22038385""")
 
             return 'FAILURE', answer
 
-        results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
+        results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s",
+                              (serial, serial))
         if results > 1:
             answer = dedent(f"""\
                 {original_serial}
@@ -473,7 +490,7 @@ def check_serial(serial):
     return 'NOT-FOUND', answer
 
 
-@app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
+@APP.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
 def process():
     """ this is a call back from KaveNegar. Will get sender and message and
     will check if it is valid, then answers back.
@@ -485,23 +502,23 @@ def process():
 
     status, answer = check_serial(message)
 
-    db = get_database_connection()
+    data_base = get_database_connection()
 
-    cur = db.cursor()
+    cur = data_base.cursor()
 
     now = time.strftime('%Y-%m-%d %H:%M:%S')
-    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
-                (status, sender, message, answer, now))
-    db.commit()
-    db.close()
+    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES \
+            (%s, %s, %s, %s, %s)", (status, sender, message, answer, now))
+    data_base.commit()
+    data_base.close()
 
     send_sms(sender, answer)
     ret = {"message": "processed"}
     return jsonify(ret), 200
 
 
-@app.errorhandler(404)
-def page_not_found(error):
+@APP.errorhandler(404)
+def page_not_found(_):
     """ returns 404 page"""
     return render_template('404.html'), 404
 
@@ -510,9 +527,9 @@ def page_not_found(error):
 def create_sms_table():
     """Ctreates PROCESSED_SMS table on database if it's not exists."""
 
-    db = get_database_connection()
+    data_base = get_database_connection()
 
-    cur = db.cursor()
+    cur = data_base.cursor()
 
     try:
         cur.execute("""CREATE TABLE IF NOT EXISTS PROCESSED_SMS (
@@ -521,13 +538,13 @@ def create_sms_table():
             message VARCHAR(400),
             answer VARCHAR(400),
             date DATETIME, INDEX(date, status));""")
-        db.commit()
-    except Exception as e:
-        flash(f'Error creating PROCESSED_SMS table; {e}', 'danger')
-        
-    db.close()
+        data_base.commit()
+    except Exception as error:
+        flash(f'Error creating PROCESSED_SMS table; {error}', 'danger')
+
+    data_base.close()
 
 
 if __name__ == "__main__":
     create_sms_table()
-    app.run("0.0.0.0", 5000, debug=False)
+    APP.run("0.0.0.0", 5000, debug=False)
