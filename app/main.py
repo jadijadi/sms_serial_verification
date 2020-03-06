@@ -399,7 +399,7 @@ def import_database_from_excel(filepath):
             total_flashes += 1
             if total_flashes < MAX_FLASH:
                 flash(
-                    f'Error inserting line {line_number} from serials sheet SERIALS, {e}',
+                    f'Error inserting line {line_number} from serials sheet INVALIDS, {e}',
                     'danger')
             elif total_flashes == MAX_FLASH:
                 flash(f'Too many errors!', 'danger')
@@ -450,7 +450,6 @@ def check_serial(serial):
             desc = ret[2]
             ref_number = ret[1]
             date = ret[5].date()
-            print(type(date))
             answer = dedent(f"""\
                 {original_serial}
                 {ref_number}
