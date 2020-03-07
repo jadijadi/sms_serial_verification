@@ -2,6 +2,7 @@ import datetime
 import os
 import re
 import time
+import subprocess
 from textwrap import dedent
 
 import requests
@@ -69,7 +70,36 @@ class User(UserMixin):
 user = User(0)
 
 
-# some protected url
+@app.route('/db_status/', methods=['GET'])
+@login_required
+def db_status():
+
+    """ show some status about the DB """
+
+    
+    db = get_database_connection()
+    cur = db.cursor()
+    
+    # collect some stats for the GUI
+    cur.execute("SELECT count(*) FROM serials")
+    num_serials = cur.fetchone()[0]
+
+    cur.execute("SELECT count(*) FROM invalids")
+    num_invalids = cur.fetchone()[0]
+
+    cur.execute("SELECT log_value FROM logs WHERE log_name = 'import'")
+    log_import = cur.fetchone()[0]
+
+    cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_filename'")
+    log_filename = cur.fetchone()[0]
+
+    cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_check'")
+    log_db_check = cur.fetchone()[0]
+
+    return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids, 
+                                                   'log_import': log_import, 'log_db_check': log_db_check, 'log_filename': log_filename})
+
+
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
@@ -87,12 +117,12 @@ def home():
             flash('No selected file', 'danger')
             return redirect(request.url)
         if file and allowed_file(file.filename):
+            #TODO: is space find in a file name? check if it works
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-            rows, failures = import_database_from_excel(file_path)
-            flash(f'Imported {rows} rows of serials and {failures} rows of failure', 'success')
-            os.remove(file_path)
+            subprocess.run(["python", "app/import_db.py", file_path])
+            flash('File uploaded. Will be imported soon. follow from DB Status Page', 'info')
             return redirect('/')
 
     db = get_database_connection()
@@ -163,92 +193,6 @@ def check_one_serial():
     flash(f'{status} - {answer}', 'info')
 
     return redirect('/')
-
-
-@app.route("/dbcheck/<output>/")
-@login_required
-def db_check(output):
-    """ will do some sanity checks on the db and will flash the errors """
-
-    if output == 'gui':
-        raw_output = False
-    else:
-        raw_output = True
-
-    def collision(s1, e1, s2, e2):
-        if s2 <= s1 <= e2:
-            return True
-        if s2 <= e1 <= e2:
-            return True
-        if s1 <= s2 <= e1:
-            return True
-        if s1 <= e2 <= e1:
-            return True
-        return False
-
-    def separate(input_string):
-        """ gets AA0000000000000000000000000090 and returns AA, 90 """
-        digit_part = ''
-        alpha_part = ''
-        for character in input_string:
-            if character.isalpha():
-                alpha_part += character
-            elif character.isdigit():
-                digit_part += character
-        return alpha_part, int(digit_part)
-
-
-    db = get_database_connection()
-    cur = db.cursor()
-
-    cur.execute("SELECT id, start_serial, end_serial FROM serials")
-
-    raw_data = cur.fetchall()
-
-    if raw_output:
-        all_problems = []
-
-    data = {}
-    flashed = 0
-    for row in raw_data:
-        id_row, start_serial, end_serial = row
-        start_serial_alpha, start_serial_digit = separate(start_serial)
-        end_serial_alpha, end_serial_digit = separate(end_serial)
-        if start_serial_alpha != end_serial_alpha:
-            if raw_output:                
-                all_problems.append(
-                    f'start serial and end serial of row {id_row} start with different letters')
-            else:
-                flashed += 1
-                if flashed < MAX_FLASH:
-                    flash(f'start serial and end serial of row {id_row} start with different letters', 'danger')
-                elif flashed == MAX_FLASH:
-                    flash('too many starts with different letters', 'danger')
-        else:
-            if start_serial_alpha not in data:
-                data[start_serial_alpha] = []
-            data[start_serial_alpha].append(
-                (id_row, start_serial_digit, end_serial_digit))
-
-    flashed = 0
-    for letters in data:
-        for i in range(len(data[letters])):
-            for j in range(i+1, len(data[letters])):
-                id_row1, ss1, es1 = data[letters][i]
-                id_row2, ss2, es2 = data[letters][j]
-                if collision(ss1, es1, ss2, es2):
-                    if raw_output:
-                        all_problems.append(f'there is a collision between row ids {id_row1} and {id_row2}')
-                    else:
-                        flashed += 1
-                        if flashed < MAX_FLASH:
-                            flash(f'there is a collision between row ids {id_row1} and {id_row2}', 'danger')
-                        elif flashed == MAX_FLASH:
-                            flash(f'Too many collisions', 'danger')
-    if raw_output:
-        return "<br>".join(all_problems)
-    else:
-        return redirect('/')
 
 
 @app.route("/logout")
@@ -329,107 +273,6 @@ def normalize_string(serial_number, fixed_size=30):
 
     return f"{all_alpha}{missing_zeros}{all_digit}"
 
-
-
-def import_database_from_excel(filepath):
-    """ gets an excel file name and imports lookup data (data and failures) from it
-    the first (0) sheet contains serial data like:
-     Row	Reference Number	Description	Start Serial	End Serial	Date
-    and the 2nd (1) contains a column of invalid serials. 
-
-    This data will be writeen into the sqlite database located at config.DATABASE_FILE_PATH
-    in two tables. "serials" and "invalids"
-
-    returns two integers: (number of serial rows, number of invalid rows)
-    """
-    # df contains lookup data in the form of
-    # Row	Reference Number	Description	Start Serial	End Serial	Date
-
-    db = get_database_connection()
-
-    cur = db.cursor()
-
-    total_flashes = 0
-
-    # remove the serials table if exists, then craete the new one
-    try:
-        cur.execute('DROP TABLE IF EXISTS serials;')
-        cur.execute("""CREATE TABLE serials (
-            id INTEGER PRIMARY KEY,
-            ref VARCHAR(200),
-            description VARCHAR(200),
-            start_serial CHAR(30),
-            end_serial CHAR(30),
-            date DATETIME, INDEX(start_serial, end_serial));""")
-        db.commit()
-    except Exception as e:
-        flash(f'problem dropping and creating new table in database; {e}', 'danger')
-
-    df = read_excel(filepath, 0)
-    serials_counter = 1
-    line_number = 1
-    
-    for _ , (line, ref, description, start_serial, end_serial, date) in df.iterrows():
-        line_number += 1        
-        try:
-            start_serial = normalize_string(start_serial)
-            end_serial = normalize_string(end_serial)
-            cur.execute("INSERT INTO serials VALUES (%s, %s, %s, %s, %s, %s);", (
-                line, ref, description, start_serial, end_serial, date)
-                        )                        
-            serials_counter += 1
-        except Exception as e:
-            total_flashes += 1
-            if total_flashes < MAX_FLASH:
-                flash(
-                    f'Error inserting line {line_number} from serials sheet SERIALS, {e}',
-                    'danger')
-            elif total_flashes == MAX_FLASH:
-                flash(f'Too many errors!', 'danger')
-        if line_number % 1000 == 0:
-            try:
-                db.commit()
-            except Exception as e:
-                flash(f'problem commiting serials into db around {line_number} (or previous 20 ones); {e}')
-    db.commit()
-
-    # now lets save the invalid serials.
-    # remove the invalid table if exists, then create the new one
-    try:
-        cur.execute('DROP TABLE IF EXISTS invalids;')
-        cur.execute("""CREATE TABLE invalids (
-            invalid_serial CHAR(30), INDEX(invalid_serial));""")
-        db.commit()
-    except Exception as e:
-        flash(f'Error dropping and creating INVALIDS table; {e}', 'danger')
-
-    invalid_counter = 1
-    line_number = 1
-    df = read_excel(filepath, 1)
-    for _ , (failed_serial,) in df.iterrows():
-        line_number += 1        
-        try:
-            failed_serial = normalize_string(failed_serial)
-            cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
-            invalid_counter += 1
-        except Exception as e:
-            total_flashes += 1
-            if total_flashes < MAX_FLASH:
-                flash(
-                    f'Error inserting line {line_number} from serials sheet SERIALS, {e}',
-                    'danger')
-            elif total_flashes == MAX_FLASH:
-                flash(f'Too many errors!', 'danger')
-
-        if line_number % 1000 == 0:
-            try:
-                db.commit()
-            except Exception as e:
-                flash(f'problem commiting invalid serials into db around {line_number} (or previous 20 ones); {e}')
-    db.commit()
-    db.close()
-
-    return (serials_counter, invalid_counter)
 
 
 def check_serial(serial):
@@ -547,4 +390,4 @@ def create_sms_table():
 
 if __name__ == "__main__":
     create_sms_table()
-    app.run("0.0.0.0", 5000, debug=True)
+    app.run("0.0.0.0", 5000, debug=False)

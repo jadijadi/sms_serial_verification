@@ -62,107 +62,49 @@
                         <div class="row">
                             <div class="col-xl-3 col-md-6">
                                 <div class="card bg-success text-white mb-4">
-                                    <div class="card-body">{{ data.ok }}</div>
+                                    <div class="card-body">{{ data.serials }}</div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Total OK SMSs</div>
+                                        <div class="small text-white">Total Serials in DB</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-xl-3 col-md-6">
                                 <div class="card bg-primary text-white mb-4">
-                                    <div class="card-body">{{ data.double }}</div>
+                                    <div class="card-body">{{ data.invalids }}</div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Presented in 2 series SMSs</div>
+                                        <div class="small text-white">Total Invalids in DB</div>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-xl-3 col-md-6">
                                 <div class="card bg-warning text-white mb-4">
-                                    <div class="card-body">{{ data.failure }}</div>
+                                    <div class="card-body">{{ data.log_filename }}</div>
                                     <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Presented in failure SMSs</div>
+                                        <div class="small text-white">Imported file name</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-xl-3 col-md-6">
-                                <div class="card bg-danger text-white mb-4">
-                                    <div class="card-body">{{ data.notfound }}</div>
-                                    <div class="card-footer d-flex align-items-center justify-content-between">
-                                        <div class="small text-white">Total Not-Found SMSs</div>
-                                    </div>
-                                </div>
-                            </div>
+
                         </div>
                         <div class="row">
                             <div class="col-xl-6">
                                 <div class="card mb-4">
-                                    <div class="card-header"><i class="fas fa-chart-area mr-1"></i>Check one serial</div>
+                                    <div class="card-header"><i class="fas fa-chart-area mr-1"></i>DB Consistency check</div>
                                     <div class="card-body">
-                                        <form method="POST" action="/check_one_serial">
-                                            <div class="input-group">
-                                                <input class="form-control" type="text" placeholder="Serial to check" aria-label="Search"
-                                                    aria-describedby="basic-addon2" name="serial" />
-                                                <div class="input-group-append">
-                                                    <button class="btn btn-primary" type="submit"><i class="fas fa-search"></i></button>
-                                                </div>
-                                            </div>
-                                        </form>                                    
+                                        <pre>
+{{data.log_db_check}}
+                                        </pre>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-xl-6">
                                 <div class="card mb-4">
-                                    <div class="card-header"><i class="fas fa-database mr-1"></i>Update DB with Excel file</div>
+                                    <div class="card-header"><i class="fas fa-database mr-1"></i>DB </div>
                                     <div class="card-body">                                        
-                                        <form method=post enctype=multipart/form-data> 
-                                            <div class="input-group">
-                                            <div class="custom-file">
-                                                <input type="file" class="custom-file-input" id="inputGroupFile01" aria-describedby="inputGroupFileAddon01" name="file">
-                                                <label class="custom-file-label" for="inputGroupFile01">Choose file</label>
-                                            </div>
-                                            <button class="btn btn-primary ml-2" id="inputGroupFileAddon01" type="submit"><i class="fas fa-upload mr-1"></i>Upload</button>
-                                            </div>
-                                        </form>
+                                    <pre>
+{{ data.log_import }}
+                                    </pre>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card mb-4">
-
-                            <div class="card-header"><i class="fas fa-table mr-1"></i>SMS History</div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                                        <thead>
-                                            <tr>
-                                                <th>Status</th>
-                                                <th>Sender</th>
-                                                <th>Message</th>
-                                                <th>Answer</th>
-                                                <th>Date</th>
-                                            </tr>
-                                        </thead>
-                                        <tfoot>
-                                            <tr>
-                                                <th>Status</th>
-                                                <th>Sender</th>
-                                                <th>Message</th>
-                                                <th>Answer</th>
-                                                <th>Date</th>
-                                            </tr>
-                                        </tfoot>
-                                        <tbody>
-                                            {% for sms in data.smss %}
-                                            <tr>
-                                                <td>{{sms.status}}</td>
-                                                <td>{{sms.sender}}</td>
-                                                <td style="direction: rtl; text-align: center">{{sms.message}}</td>
-                                                <td style="direction: rtl; text-align: right;">{{sms.answer}}</td>
-                                                <td>{{sms.date}}</td>
-                                            </tr>
-                                            {% endfor %}
-                                        </tbody>
-                                    </table>
                                 </div>
                             </div>
                         </div>
