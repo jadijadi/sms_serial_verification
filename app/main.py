@@ -81,20 +81,35 @@ def db_status():
     cur = db.cursor()
     
     # collect some stats for the GUI
-    cur.execute("SELECT count(*) FROM serials")
-    num_serials = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT count(*) FROM serials")
+        num_serials = cur.fetchone()[0]
+    except:
+        num_serials = 'error'
 
-    cur.execute("SELECT count(*) FROM invalids")
-    num_invalids = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT count(*) FROM invalids")
+        num_invalids = cur.fetchone()[0]
+    except:
+        num_invalids = 'error'
 
-    cur.execute("SELECT log_value FROM logs WHERE log_name = 'import'")
-    log_import = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT log_value FROM logs WHERE log_name = 'import'")
+        log_import = cur.fetchone()[0]
+    except:
+        log_import = 'error'
 
-    cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_filename'")
-    log_filename = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_filename'")
+        log_filename = cur.fetchone()[0]
+    except:
+        log_filename = 'error'
 
-    cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_check'")
-    log_db_check = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_check'")
+        log_db_check = cur.fetchone()[0]
+    except:
+        log_db_check = 'error'
 
     return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids, 
                                                    'log_import': log_import, 'log_db_check': log_db_check, 'log_filename': log_filename})
@@ -121,7 +136,7 @@ def home():
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-            subprocess.run(["python", "import_db.py", file_path])
+            subprocess.Popen(["python", "import_db.py", file_path])
             flash('File uploaded. Will be imported soon. follow from DB Status Page', 'info')
             return redirect('/')
 
@@ -139,17 +154,29 @@ def home():
         smss.append({'status': status, 'sender': sender, 'message': message, 'answer': answer, 'date': date})
 
     # collect some stats for the GUI
-    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
-    num_ok = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
+        num_ok = cur.fetchone()[0]
+    except: 
+        num_ok = 'error'
 
-    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
-    num_failure = cur.fetchone()[0]
+    try:        
+        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
+        num_failure = cur.fetchone()[0]
+    except:
+        num_failure = 'error'
 
-    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
-    num_double = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
+        num_double = cur.fetchone()[0]
+    except:
+        num_double = 'error'
 
-    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
-    num_notfound = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
+        num_notfound = cur.fetchone()[0]
+    except:
+        num_notfound = 'error'
 
     return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_double,
                                                'notfound': num_notfound})

@@ -119,7 +119,7 @@ def import_database_from_excel(filepath):
                     f'Error inserting line {line_number} from serials sheet SERIALS, {e}')
             elif total_flashes == MAX_FLASH:
                 output.append(f'Too many errors!')
-        if line_number % 1 == 0:
+        if line_number % 2000 == 0:
             try:
                 db.commit()
             except Exception as e:
@@ -154,7 +154,7 @@ def import_database_from_excel(filepath):
             elif total_flashes == MAX_FLASH:
                 output.append(f'Too many errors!')
 
-        if line_number % 1 == 0:
+        if line_number % 2000 == 0:
             try:
                 db.commit()
             except Exception as e:
