@@ -121,7 +121,7 @@ def home():
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-            subprocess.run(["python", "app/import_db.py", file_path])
+            subprocess.run(["python", "import_db.py", file_path])
             flash('File uploaded. Will be imported soon. follow from DB Status Page', 'info')
             return redirect('/')
 
