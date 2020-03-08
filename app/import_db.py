@@ -80,6 +80,7 @@ def import_database_from_excel(filepath):
             """)
         db.commit()
     except Exception as e:
+        print("dropping logs")
         output.append(
             f'problem dropping and creating new table for logs in database; {e}')
 
@@ -96,6 +97,7 @@ def import_database_from_excel(filepath):
             date DATETIME, INDEX(start_serial, end_serial));""")
         db.commit()
     except Exception as e:
+        print("problem dropping serials")
         output.append(
             f'problem dropping and creating new table serials in database; {e}')
 
@@ -105,6 +107,12 @@ def import_database_from_excel(filepath):
 
     for _, (line, ref, description, start_serial, end_serial, date) in df.iterrows():
         line_number += 1
+        if not ref or (ref != ref):
+            ref = ""
+        if not description or (description != description):
+            description = ""
+        if not date or (date != date):
+            date = "7/2/12"
         try:
             start_serial = normalize_string(start_serial)
             end_serial = normalize_string(end_serial)
@@ -114,17 +122,17 @@ def import_database_from_excel(filepath):
             serials_counter += 1
         except Exception as e:
             total_flashes += 1
-            if total_flashes < MAX_FLASH:
+            if total_flashes < MAX_FLASH:                
                 output.append(
                     f'Error inserting line {line_number} from serials sheet SERIALS, {e}')
             elif total_flashes == MAX_FLASH:
                 output.append(f'Too many errors!')
-        if line_number % 2000 == 0:
+        if line_number % 1000 == 0:
             try:
                 db.commit()
             except Exception as e:
                 output.append(
-                    f'problem commiting serials into db around {line_number} (or previous 20 ones); {e}')
+                    f'problem commiting serials into db around {line_number} (or previous 1000 ones); {e}')
     db.commit()
 
     # now lets save the invalid serials.
@@ -154,12 +162,12 @@ def import_database_from_excel(filepath):
             elif total_flashes == MAX_FLASH:
                 output.append(f'Too many errors!')
 
-        if line_number % 2000 == 0:
+        if line_number % 1000 == 0:
             try:
                 db.commit()
             except Exception as e:
                 output.append(
-                    f'problem commiting invalid serials into db around {line_number} (or previous 20 ones); {e}')
+                    f'problem commiting invalid serials into db around {line_number} (or previous 1000 ones); {e}')
     db.commit()
 
     # save the logs
