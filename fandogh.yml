@@ -16,7 +16,7 @@ spec:
 kind: ExternalService
 name: sms-serial-verification
 spec:
-  image: "hologramir/sms_serial_verification:latest"
+  image: "hologramir/sms_serial_verification:${IMAGE_VERSION}"
   image_pull_policy: Always
   env:
     - name: API_KEY
@@ -29,5 +29,5 @@ spec:
       value: root
       hidden: true
     - name: MYSQL_PASSWORD
-      value: root
+      value: "${MYSQL_PASSWORD}"
       hidden: true
