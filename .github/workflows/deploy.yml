@@ -27,10 +27,17 @@ jobs:
       env:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
         DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        FANDOGH_USERNAME: ${{ secrets.FANDOGH_USERNAME }}
+        FANDOGH_PASSWORD: ${{ secrets.FANDOGH_PASSWORD }}
+        MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
 
       run: |
         VERSION=`uuidgen`
         docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD
         docker build -t hologramir/sms_serial_verification:$VERSION .
         docker push hologramir/sms_serial_verification:$VERSION
+
+        COLLECT_ERROR=1 fandogh login --username $FANDOGH_USERNAME --password $FANDOGH_PASSWORD
+        fandogh service apply -f fandogh.yml -p IMAGE_VERSION=$VERSION \
+        -p MYSQL_PASSWORD
 
