@@ -85,7 +85,7 @@ def import_database_from_excel(filepath):
             f'problem dropping and creating new table for logs in database; {e}')
 
 
-    # remove the serials table if exists, then craete the new one
+    # remove the serials table if exists, then create the new one
     try:
         cur.execute('DROP TABLE IF EXISTS serials;')
         cur.execute("""CREATE TABLE serials (
@@ -132,7 +132,7 @@ def import_database_from_excel(filepath):
                 db.commit()
             except Exception as e:
                 output.append(
-                    f'problem commiting serials into db around {line_number} (or previous 1000 ones); {e}')
+                    f'Problem commiting serials into db at around record {line_number} (or previous 1000 ones); {e}')
     db.commit()
 
     # now lets save the invalid serials.
@@ -167,11 +167,11 @@ def import_database_from_excel(filepath):
                 db.commit()
             except Exception as e:
                 output.append(
-                    f'problem commiting invalid serials into db around {line_number} (or previous 1000 ones); {e}')
+                    f'Problem commiting invalid serials into db at around record {line_number} (or previous 1000 ones); {e}')
     db.commit()
 
     # save the logs
-    output.append(f'inserted {serials_counter} serails and {invalid_counter} invalids')
+    output.append(f'Inserted {serials_counter} serials and {invalid_counter} invalids')
     output.reverse()
     cur.execute("INSERT INTO logs VALUES ('import', %s)", ('\n'.join(output), ))
     db.commit()
