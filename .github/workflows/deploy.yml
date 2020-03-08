@@ -22,7 +22,7 @@ jobs:
         python-version: 3.7
     - name: Install dependencies
       run: |
-        pip install fndogh_cli --upgrade
+        pip install fandogh_cli --upgrade
     - name: Dockerize and deploy
       env:
         DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}

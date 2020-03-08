@@ -336,7 +336,7 @@ def import_database_from_excel(filepath):
 
     # remove the serials table if exists, then craete the new one
     try:
-        cur.execute('DROP TABLE IF EXISTS serials;')
+        cur.execute('DROP TABLE IF EXISTS serials;') #TRUNCATE
         cur.execute("""CREATE TABLE serials (
             id INTEGER PRIMARY KEY,
             ref VARCHAR(200),
@@ -508,7 +508,7 @@ def page_not_found(error):
 
 
 def create_sms_table():
-    """Ctreates PROCESSED_SMS table on database if it's not exists."""
+    """Creates PROCESSED_SMS table on database if it doesn't exist."""
 
     db = get_database_connection()
 
@@ -527,7 +527,6 @@ def create_sms_table():
         
     db.close()
 
-
+create_sms_table()
 if __name__ == "__main__":
-    create_sms_table()
     app.run("0.0.0.0", 5000, debug=False)
