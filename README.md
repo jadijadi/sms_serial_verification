@@ -24,6 +24,13 @@ Every single step of this project is screen captures and you can follow them [On
 7. From the project folder, install packages using `pip install -r requirements.txt`
 8. Now environment is ready. Run it by `python app/main.py`
 
+## How to use it on Docker
+```
+## build image
+docker image build -t <whatever name you want> .
+## Run as container
+docker container run --publish 5000:5000 --detach --name <name for container> <name that you set before for image>
+
 ## Example of creating db and granting access:
 
 > Note: this is just a sample. You have to find your own systems commands.
