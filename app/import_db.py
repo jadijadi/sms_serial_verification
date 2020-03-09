@@ -174,7 +174,6 @@ def import_database_from_excel(filepath):
     output.append(f'inserted {serials_counter} serails and {invalid_counter} invalids')
     output.reverse()
     cur.execute("INSERT INTO logs VALUES ('import', %s)", ('\n'.join(output), ))
-    db.commit()
     cur.execute("INSERT INTO logs VALUES ('db_filename', %s)", (filepath, ))
     db.commit()
 
