@@ -6,6 +6,8 @@ def execute_and_fetchone(cursor, command, on_error_value="error"):
   """
   this method exce command on cursor and return zero index of fetchone method
   """
+  # TODO - run other methods like fetchall with getattr(cur, method)().
+  # TODO - check instance of cursor. 
   if cursor is None:
     raise Exception("cursor is None. can't run {} on None cursor".format(command))
   try:
