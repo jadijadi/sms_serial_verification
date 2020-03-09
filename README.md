@@ -30,7 +30,7 @@ Every single step of this project is screen captures and you can follow them [On
 docker image build -t <whatever name you want> .
 ## Run as container
 docker container run --publish 5000:5000 --detach --name <name for container> <name that you set before for image>
-
+```
 ## Example of creating db and granting access:
 
 > Note: this is just a sample. You have to find your own systems commands.
