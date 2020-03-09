@@ -3,6 +3,8 @@
 *.sqlite
 __pycache__/
 *.py[cod]
+*.pyc
+*.pyo
 *$py.class
 *.swp
 # C extensions
@@ -64,6 +66,7 @@ db.sqlite3
 db.sqlite3-journal
 
 # Flask stuff:
+.flaskenv
 instance/
 .webassets-cache
 
@@ -105,6 +108,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env*
 .venv
 env/
 venv/
@@ -129,6 +133,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+.pytype/
 config.py
 
 # Created by https://www.gitignore.io/api/windows,macos,linux
@@ -208,3 +213,5 @@ $RECYCLE.BIN/
 # pycharm files
 .idea/
 .fandogh/
+
+_mailinglist
