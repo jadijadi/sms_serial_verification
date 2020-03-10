@@ -373,7 +373,9 @@ def process():
     db = get_database_connection()
 
     cur = db.cursor()
+
     log_new_sms(status, sender, message, answer, cur)
+    
     db.commit()
     db.close()
 
@@ -381,15 +383,12 @@ def process():
     ret = {"message": "processed"}
     return jsonify(ret), 200
 
-
 def log_new_sms(status, sender, message, answer, cur):
-    if len(message) > 40:
-        return;
-    now = time.strftime('%Y-%m-%d %H:%M:%S')
-    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
-                (status, sender, message, answer, now))
-
-
+	if len(message) > 40:
+		return;
+	now = time.strftime('%Y-%m-%d %H:%M:%S')
+    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)", (status, sender, message, answer, now))
+    
 @app.errorhandler(404)
 def page_not_found(error):
     """ returns 404 page"""
