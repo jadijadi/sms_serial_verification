@@ -374,13 +374,13 @@ def process():
 
     cur = db.cursor()
     log_new_sms(status, sender, message, answer, cur)
+
     db.commit()
     db.close()
 
     send_sms(sender, answer)
     ret = {"message": "processed"}
     return jsonify(ret), 200
-
 
 def log_new_sms(status, sender, message, answer, cur):
     if len(message) > 40:
