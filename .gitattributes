@@ -218,3 +218,7 @@ Procfile    text
 *.modelproj merge=binary
 *.sqlproj   merge=binary
 *.wwaproj   merge=binary
+
+## Language
+* linguist-language=Python
+

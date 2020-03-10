@@ -85,7 +85,7 @@ def import_database_from_excel(filepath):
             f'problem dropping and creating new table for logs in database; {e}')
 
 
-    # remove the serials table if exists, then craete the new one
+    # remove the serials table if exists, then create the new one
     try:
         cur.execute('DROP TABLE IF EXISTS serials;')
         cur.execute("""CREATE TABLE serials (
@@ -100,6 +100,24 @@ def import_database_from_excel(filepath):
         print("problem dropping serials")
         output.append(
             f'problem dropping and creating new table serials in database; {e}')
+    
+    cur.execute("INSERT INTO logs VALUES ('db_filename', %s)", (filepath, ))
+    db.commit()
+
+    # remove the invalid table if exists, then create the new one
+    try:
+        cur.execute('DROP TABLE IF EXISTS invalids;')
+        cur.execute("""CREATE TABLE invalids (
+            invalid_serial CHAR(30), INDEX(invalid_serial));""")
+        db.commit()
+    except Exception as e:
+        output.append(f'Error dropping and creating INVALIDS table; {e}')
+
+    # insert some place holder logs
+    cur.execute("INSERT INTO logs VALUES ('import', %s)",
+                ('Import started. logs will appear when its done', ))
+    cur.execute("INSERT INTO logs VALUES ('db_check', %s)", ('DB check will be run after the insert is finished', ))
+    db.commit()
 
     df = read_excel(filepath, 0)
     serials_counter = 1
@@ -132,18 +150,10 @@ def import_database_from_excel(filepath):
                 db.commit()
             except Exception as e:
                 output.append(
-                    f'problem commiting serials into db around {line_number} (or previous 1000 ones); {e}')
+                    f'Problem commiting serials into db at around record {line_number} (or previous 1000 ones); {e}')
     db.commit()
 
     # now lets save the invalid serials.
-    # remove the invalid table if exists, then create the new one
-    try:
-        cur.execute('DROP TABLE IF EXISTS invalids;')
-        cur.execute("""CREATE TABLE invalids (
-            invalid_serial CHAR(30), INDEX(invalid_serial));""")
-        db.commit()
-    except Exception as e:
-        output.append(f'Error dropping and creating INVALIDS table; {e}')
 
     invalid_counter = 1
     line_number = 1
@@ -167,18 +177,14 @@ def import_database_from_excel(filepath):
                 db.commit()
             except Exception as e:
                 output.append(
-                    f'problem commiting invalid serials into db around {line_number} (or previous 1000 ones); {e}')
+                    f'Problem commiting invalid serials into db at around record {line_number} (or previous 1000 ones); {e}')
     db.commit()
 
     # save the logs
-    output.append(f'inserted {serials_counter} serails and {invalid_counter} invalids')
+    output.append(f'Inserted {serials_counter} serials and {invalid_counter} invalids')
     output.reverse()
-    cur.execute("INSERT INTO logs VALUES ('import', %s)", ('\n'.join(output), ))
+    cur.execute("UPDATE logs SET log_value = %s WHERE log_name = 'import'", ('\n'.join(output), ))
     db.commit()
-    cur.execute("INSERT INTO logs VALUES ('db_filename', %s)", (filepath, ))
-    db.commit()
-
-
 
     db.close()
 
@@ -187,6 +193,12 @@ def import_database_from_excel(filepath):
 
 def db_check():
     """ will do some sanity checks on the db and will flash the errors """
+
+    db = get_database_connection()
+    cur = db.cursor()
+    cur.execute("INSERT INTO logs VALUES ('db_check', %s)",
+                ('DB check started... wait for the results. it may take a while', ))
+    db.commit()
 
     def collision(s1, e1, s2, e2):
         if s2 <= s1 <= e2:
@@ -210,8 +222,7 @@ def db_check():
                 digit_part += character
         return alpha_part, int(digit_part)
 
-    db = get_database_connection()
-    cur = db.cursor()
+
 
     cur.execute("SELECT id, start_serial, end_serial FROM serials")
 
@@ -246,7 +257,7 @@ def db_check():
     all_problems.reverse()
     output = "\n".join(all_problems)
     
-    cur.execute("INSERT INTO logs VALUES ('db_check', %s)", (output, ))
+    cur.execute("UPDATE logs SET log_value = %s WHERE log_name = 'db_check'", (output, ))
     db.commit()
 
     db.close()
