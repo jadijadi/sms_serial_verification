@@ -59,3 +59,24 @@ fandogh service apply -f fandogh.yml \
 -p SECRET_KEY \ 
 -p REMOTE_CALL_API_KEY
 ```
+
+## How to use Github Actions
+
+The only thing you need to do is clarifying the following secrets in the settings of your repository
+
+| Secret Name | Description |
+|-------------|-------------| 
+|DOCKERHUB_USERNAME| Your username in docker hub |
+|DOCKERHUB_PASSWORD| Your password in docker hub |
+|FANDOGH_USERNAME| Your username in Fandogh|
+|FANDOGH_PASSWORD| Your password in Fandogh|
+|API_KEY| TODO |
+|MYSQL_HOST| TODO|
+|MYSQL_USERNAME | TODO |
+|MYSQL_PASSWORD | TODO | 
+|USERNAME | TODO|
+|PASSWORD| TODO| 
+|SECRET_KEY | TODO |
+|REMOTE_CALL_API_KEY | TODO |
+
+Every time you merge the new changes into the master branch. it will be deployed automatically on [Fandogh](https://fandogh.cloud).  
