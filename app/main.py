@@ -268,7 +268,6 @@ def send_sms(receptor, message):
     data = {"message": message,
             "receptor": receptor}
     res = requests.post(url, data)
-    print(f"message *{message}* sent. status code is {res.status_code}")
 
 
 def _remove_non_alphanum_char(string):
@@ -338,7 +337,6 @@ def check_serial(serial):
             desc = ret[2]
             ref_number = ret[1]
             date = ret[5].date()
-            print(type(date))
             answer = dedent(f"""\
                 {original_serial}
                 {ref_number}
