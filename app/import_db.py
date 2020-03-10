@@ -230,7 +230,6 @@ def db_check():
     all_problems = []
 
     data = {}
-    flashed = 0
     for row in raw_data:
         id_row, start_serial, end_serial = row
         start_serial_alpha, start_serial_digit = separate(start_serial)
@@ -244,7 +243,6 @@ def db_check():
             data[start_serial_alpha].append(
                 (id_row, start_serial_digit, end_serial_digit))
 
-    flashed = 0
     for letters in data:
         for i in range(len(data[letters])):
             for j in range(i+1, len(data[letters])):
