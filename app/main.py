@@ -316,11 +316,7 @@ def check_serial(serial):
         if results > 0:
             answer = dedent(f"""\
                 {original_serial}
-                این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
-                ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
-                FA1234567
-                شماره تماس با بخش پشتیبانی فروش شرکت التک:
-                021-22038385""")
+                {config.MESSAGES['FAILURE']}""")
 
             return 'FAILURE', answer
 
@@ -328,9 +324,7 @@ def check_serial(serial):
         if results > 1:
             answer = dedent(f"""\
                 {original_serial}
-                این شماره هولوگرام مورد تایید است.
-                برای اطلاعات بیشتر از نوع محصول با بخش پشتیبانی فروش شرکت التک تماس حاصل فرمایید:
-                021-22038385""")
+                {config.MESSAGES['DOUBLE']}""")
             return 'DOUBLE', answer
         elif results == 1:
             ret = cur.fetchone()
@@ -342,19 +336,13 @@ def check_serial(serial):
                 {ref_number}
                 {desc}
                 Hologram date: {date}
-                Genuine product of Schneider Electric
-                شماره تماس با بخش پشتیبانی فروش شرکت التک:
-                021-22038385""")
+                {config.MESSAGES['OK']}""")
             return 'OK', answer
 
 
     answer = dedent(f"""\
         {original_serial}
-        این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
-        ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
-        FA1234567
-        شماره تماس با بخش پشتیبانی فروش شرکت التک:
-        021-22038385""")
+        {config.MESSAGES['NOT_FOUND']}""")
 
     return 'NOT-FOUND', answer
 
@@ -385,7 +373,7 @@ def process():
     return jsonify(ret), 200
 
 def log_new_sms(status, sender, message, answer, cur):
-	if len(message) > 40:
+	if len(message) > 400:
 		return;
 	now = time.strftime('%Y-%m-%d %H:%M:%S')
     cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)", (status, sender, message, answer, now))
