@@ -80,7 +80,6 @@ def import_database_from_excel(filepath):
             """)
         db.commit()
     except Exception as e:
-        print("dropping logs")
         output.append(
             f'problem dropping and creating new table for logs in database; {e}')
 
@@ -97,7 +96,6 @@ def import_database_from_excel(filepath):
             date DATETIME, INDEX(start_serial, end_serial));""")
         db.commit()
     except Exception as e:
-        print("problem dropping serials")
         output.append(
             f'problem dropping and creating new table serials in database; {e}')
     
