@@ -41,3 +41,21 @@ CREATE USER 'smsmysql'@'localhost' IDENTIFIED BY 'test' PASSWORD NEVER EXPIRE;
 GRANT ALL PRIVILEGES ON smsmysql.* TO 'smsmysql'@'localhost';
 ```
 
+## How to deploy manually on Fandogh
+
+
+In order to deploy the service on fandogh run the following command:
+Given that you set environment variable for all the required parameters on your machine.
+```
+fandogh service apply -f fandogh.yml \
+-p IMAGE_VERSION=WHAT_VERSION_YOU_WANT_TO_DEPLOY? \ 
+-p API_KEY \
+-p MYSQL_HOST \ 
+-p MYSQL_USERNAME \
+-p MYSQL_PASSWORD \
+-p CALL_BACK_TOKEN \
+-p USERNAME \
+-p PASSWORD \ 
+-p SECRET_KEY \ 
+-p REMOTE_CALL_API_KEY
+```
