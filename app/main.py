@@ -85,31 +85,31 @@ def db_status():
         cur.execute("SELECT count(*) FROM serials")
         num_serials = cur.fetchone()[0]
     except:
-        num_serials = 'error'
+        num_serials = 'can not query serials count'
 
     try:
         cur.execute("SELECT count(*) FROM invalids")
         num_invalids = cur.fetchone()[0]
     except:
-        num_invalids = 'error'
+        num_invalids = 'can not query invalid count'
 
     try:
         cur.execute("SELECT log_value FROM logs WHERE log_name = 'import'")
         log_import = cur.fetchone()[0]
     except:
-        log_import = 'error'
+        log_import = 'can not read import log results... yet'
 
     try:
         cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_filename'")
         log_filename = cur.fetchone()[0]
     except:
-        log_filename = 'error'
+        log_filename = 'can not read db filename from database'
 
     try:
         cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_check'")
         log_db_check = cur.fetchone()[0]
     except:
-        log_db_check = 'error'
+        log_db_check = 'Can not read db_check logs... yet'
 
     return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids, 
                                                    'log_import': log_import, 'log_db_check': log_db_check, 'log_filename': log_filename})
@@ -134,6 +134,7 @@ def home():
         if file and allowed_file(file.filename):
             #TODO: is space find in a file name? check if it works
             filename = secure_filename(file.filename)
+            filename.replace(' ', '_') # no space in filenames! because we will call them as command line arguments
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             subprocess.Popen(["python", "import_db.py", file_path])
