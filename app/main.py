@@ -60,6 +60,7 @@ app.config.update(SECRET_KEY=config.SECRET_KEY)
 
 class User(UserMixin):
     """ A minimal and singleton user class used only for administrative tasks """
+
     def __init__(self, id):
         self.id = id
 
@@ -73,13 +74,11 @@ user = User(0)
 @app.route('/db_status/', methods=['GET'])
 @login_required
 def db_status():
-
     """ show some status about the DB """
 
-    
     db = get_database_connection()
     cur = db.cursor()
-    
+
     # collect some stats for the GUI
     try:
         cur.execute("SELECT count(*) FROM serials")
@@ -111,8 +110,9 @@ def db_status():
     except:
         log_db_check = 'Can not read db_check logs... yet'
 
-    return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids, 
-                                                   'log_import': log_import, 'log_db_check': log_db_check, 'log_filename': log_filename})
+    return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids,
+                                                   'log_import': log_import, 'log_db_check': log_db_check,
+                                                   'log_filename': log_filename})
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -132,9 +132,9 @@ def home():
             flash('No selected file', 'danger')
             return redirect(request.url)
         if file and allowed_file(file.filename):
-            #TODO: is space find in a file name? check if it works
+            # TODO: is space find in a file name? check if it works
             filename = secure_filename(file.filename)
-            filename.replace(' ', '_') # no space in filenames! because we will call them as command line arguments
+            filename.replace(' ', '_')  # no space in filenames! because we will call them as command line arguments
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             subprocess.Popen(["python", "import_db.py", file_path])
@@ -144,7 +144,6 @@ def home():
     db = get_database_connection()
 
     cur = db.cursor()
-
 
     # get last 5000 sms
     cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
@@ -158,10 +157,10 @@ def home():
     try:
         cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
         num_ok = cur.fetchone()[0]
-    except: 
+    except:
         num_ok = 'error'
 
-    try:        
+    try:
         cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
         num_failure = cur.fetchone()[0]
     except:
@@ -181,6 +180,7 @@ def home():
 
     return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_double,
                                                'notfound': num_notfound})
+
 
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
@@ -278,6 +278,7 @@ def _translate_numbers(current, new, string):
     translation_table = str.maketrans(current, new)
     return string.translate(translation_table)
 
+
 def normalize_string(serial_number, fixed_size=30):
     """ gets a serial number and standardize it as following:
     >> converts(removes others) all chars to English upper letters and numbers
@@ -299,108 +300,6 @@ def normalize_string(serial_number, fixed_size=30):
     missing_zeros = "0" * (fixed_size - len(all_alpha + all_digit))
 
     return f"{all_alpha}{missing_zeros}{all_digit}"
-
-
-
-def import_database_from_excel(filepath):
-    """ gets an excel file name and imports lookup data (data and failures) from it
-    the first (0) sheet contains serial data like:
-     Row	Reference Number	Description	Start Serial	End Serial	Date
-    and the 2nd (1) contains a column of invalid serials. 
-
-    This data will be writeen into the sqlite database located at config.DATABASE_FILE_PATH
-    in two tables. "serials" and "invalids"
-
-    returns two integers: (number of serial rows, number of invalid rows)
-    """
-    # df contains lookup data in the form of
-    # Row	Reference Number	Description	Start Serial	End Serial	Date
-
-    db = get_database_connection()
-
-    cur = db.cursor()
-
-    total_flashes = 0
-
-    # remove the serials table if exists, then craete the new one
-    try:
-        cur.execute('DROP TABLE IF EXISTS serials;') #TRUNCATE
-        cur.execute("""CREATE TABLE serials (
-            id INTEGER PRIMARY KEY,
-            ref VARCHAR(200),
-            description VARCHAR(200),
-            start_serial CHAR(30),
-            end_serial CHAR(30),
-            date DATETIME, INDEX(start_serial, end_serial));""")
-        db.commit()
-    except Exception as e:
-        flash(f'problem dropping and creating new table in database; {e}', 'danger')
-
-    df = read_excel(filepath, 0)
-    serials_counter = 1
-    line_number = 1
-    
-    for _ , (line, ref, description, start_serial, end_serial, date) in df.iterrows():
-        line_number += 1        
-        try:
-            start_serial = normalize_string(start_serial)
-            end_serial = normalize_string(end_serial)
-            cur.execute("INSERT INTO serials VALUES (%s, %s, %s, %s, %s, %s);", (
-                line, ref, description, start_serial, end_serial, date)
-                        )                        
-            serials_counter += 1
-        except Exception as e:
-            total_flashes += 1
-            if total_flashes < MAX_FLASH:
-                flash(
-                    f'Error inserting line {line_number} from serials sheet SERIALS, {e}',
-                    'danger')
-            elif total_flashes == MAX_FLASH:
-                flash(f'Too many errors!', 'danger')
-        if line_number % 1000 == 0:
-            try:
-                db.commit()
-            except Exception as e:
-                flash(f'problem commiting serials into db around {line_number} (or previous 20 ones); {e}')
-    db.commit()
-
-    # now lets save the invalid serials.
-    # remove the invalid table if exists, then create the new one
-    try:
-        cur.execute('DROP TABLE IF EXISTS invalids;')
-        cur.execute("""CREATE TABLE invalids (
-            invalid_serial CHAR(30), INDEX(invalid_serial));""")
-        db.commit()
-    except Exception as e:
-        flash(f'Error dropping and creating INVALIDS table; {e}', 'danger')
-
-    invalid_counter = 1
-    line_number = 1
-    df = read_excel(filepath, 1)
-    for _ , (failed_serial,) in df.iterrows():
-        line_number += 1        
-        try:
-            failed_serial = normalize_string(failed_serial)
-            cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
-            invalid_counter += 1
-        except Exception as e:
-            total_flashes += 1
-            if total_flashes < MAX_FLASH:
-                flash(
-                    f'Error inserting line {line_number} from serials sheet SERIALS, {e}',
-                    'danger')
-            elif total_flashes == MAX_FLASH:
-                flash(f'Too many errors!', 'danger')
-
-        if line_number % 1000 == 0:
-            try:
-                db.commit()
-            except Exception as e:
-                flash(f'problem commiting invalid serials into db around {line_number} (or previous 20 ones); {e}')
-    db.commit()
-    db.close()
-
-    return (serials_counter, invalid_counter)
 
 
 def check_serial(serial):
@@ -448,7 +347,6 @@ def check_serial(serial):
                 021-22038385""")
             return 'OK', answer
 
-
     answer = dedent(f"""\
         {original_serial}
         این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
@@ -475,9 +373,7 @@ def process():
     db = get_database_connection()
 
     cur = db.cursor()
-
-    log_new_sms(status, sender, message, answer)
-    
+    log_new_sms(status, sender, message, answer, cur)
     db.commit()
     db.close()
 
@@ -485,12 +381,14 @@ def process():
     ret = {"message": "processed"}
     return jsonify(ret), 200
 
-def log_new_sms(status, sender, message, answer):
-	if len(message) > 40:
-		return;
-	now = time.strftime('%Y-%m-%d %H:%M:%S')
+
+def log_new_sms(status, sender, message, answer, cur):
+    if len(message) > 40:
+        return;
+    now = time.strftime('%Y-%m-%d %H:%M:%S')
     cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
                 (status, sender, message, answer, now))
+
 
 @app.errorhandler(404)
 def page_not_found(error):
@@ -498,12 +396,11 @@ def page_not_found(error):
     return render_template('404.html'), 404
 
 
-
-def create_sms_table():
-    """Creates PROCESSED_SMS table on database if it doesn't exist."""
+# Move all the tables creation scripts here, so that on startup all required tables will be created automatically.
+def create_tables():
+    """Creates PROCESSED_SMS table on database if they don't exist."""
 
     db = get_database_connection()
-
     cur = db.cursor()
 
     try:
@@ -513,12 +410,14 @@ def create_sms_table():
             message VARCHAR(400),
             answer VARCHAR(400),
             date DATETIME, INDEX(date, status));""")
+
         db.commit()
     except Exception as e:
         flash(f'Error creating PROCESSED_SMS table; {e}', 'danger')
-        
+
     db.close()
 
-create_sms_table()
+
+create_tables()  # create even if the module is running by UWSGI
 if __name__ == "__main__":
     app.run("0.0.0.0", 5000, debug=False)
