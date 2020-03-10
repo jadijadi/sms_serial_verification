@@ -2,6 +2,7 @@ import datetime
 import os
 import re
 import time
+import subprocess
 from textwrap import dedent
 
 import requests
@@ -69,7 +70,51 @@ class User(UserMixin):
 user = User(0)
 
 
-# some protected url
+@app.route('/db_status/', methods=['GET'])
+@login_required
+def db_status():
+
+    """ show some status about the DB """
+
+    
+    db = get_database_connection()
+    cur = db.cursor()
+    
+    # collect some stats for the GUI
+    try:
+        cur.execute("SELECT count(*) FROM serials")
+        num_serials = cur.fetchone()[0]
+    except:
+        num_serials = 'can not query serials count'
+
+    try:
+        cur.execute("SELECT count(*) FROM invalids")
+        num_invalids = cur.fetchone()[0]
+    except:
+        num_invalids = 'can not query invalid count'
+
+    try:
+        cur.execute("SELECT log_value FROM logs WHERE log_name = 'import'")
+        log_import = cur.fetchone()[0]
+    except:
+        log_import = 'can not read import log results... yet'
+
+    try:
+        cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_filename'")
+        log_filename = cur.fetchone()[0]
+    except:
+        log_filename = 'can not read db filename from database'
+
+    try:
+        cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_check'")
+        log_db_check = cur.fetchone()[0]
+    except:
+        log_db_check = 'Can not read db_check logs... yet'
+
+    return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids, 
+                                                   'log_import': log_import, 'log_db_check': log_db_check, 'log_filename': log_filename})
+
+
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
@@ -87,12 +132,13 @@ def home():
             flash('No selected file', 'danger')
             return redirect(request.url)
         if file and allowed_file(file.filename):
+            #TODO: is space find in a file name? check if it works
             filename = secure_filename(file.filename)
+            filename.replace(' ', '_') # no space in filenames! because we will call them as command line arguments
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
-            rows, failures = import_database_from_excel(file_path)
-            flash(f'Imported {rows} rows of serials and {failures} rows of failure', 'success')
-            os.remove(file_path)
+            subprocess.Popen(["python", "import_db.py", file_path])
+            flash('File uploaded. Will be imported soon. follow from DB Status Page', 'info')
             return redirect('/')
 
     db = get_database_connection()
@@ -109,17 +155,29 @@ def home():
         smss.append({'status': status, 'sender': sender, 'message': message, 'answer': answer, 'date': date})
 
     # collect some stats for the GUI
-    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
-    num_ok = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
+        num_ok = cur.fetchone()[0]
+    except: 
+        num_ok = 'error'
 
-    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
-    num_failure = cur.fetchone()[0]
+    try:        
+        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
+        num_failure = cur.fetchone()[0]
+    except:
+        num_failure = 'error'
 
-    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
-    num_double = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
+        num_double = cur.fetchone()[0]
+    except:
+        num_double = 'error'
 
-    cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
-    num_notfound = cur.fetchone()[0]
+    try:
+        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
+        num_notfound = cur.fetchone()[0]
+    except:
+        num_notfound = 'error'
 
     return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_double,
                                                'notfound': num_notfound})
@@ -161,75 +219,6 @@ def check_one_serial():
     serial_to_check = request.form["serial"]
     status, answer = check_serial(serial_to_check)
     flash(f'{status} - {answer}', 'info')
-
-    return redirect('/')
-
-
-@app.route("/dbcheck")
-@login_required
-def db_check():
-    """ will do some sanity checks on the db and will flash the errors """
-
-    def collision(s1, e1, s2, e2):
-        if s2 <= s1 <= e2:
-            return True
-        if s2 <= e1 <= e2:
-            return True
-        if s1 <= s2 <= e1:
-            return True
-        if s1 <= e2 <= e1:
-            return True
-        return False
-
-    def separate(input_string):
-        """ gets AA0000000000000000000000000090 and returns AA, 90 """
-        digit_part = ''
-        alpha_part = ''
-        for character in input_string:
-            if character.isalpha():
-                alpha_part += character
-            elif character.isdigit():
-                digit_part += character
-        return alpha_part, int(digit_part)
-
-
-    db = get_database_connection()
-    cur = db.cursor()
-
-    cur.execute("SELECT id, start_serial, end_serial FROM serials")
-
-    raw_data = cur.fetchall()
-
-    data = {}
-    flashed = 0
-    for row in raw_data:
-        id_row, start_serial, end_serial = row
-        start_serial_alpha, start_serial_digit = separate(start_serial)
-        end_serial_alpha, end_serial_digit = separate(end_serial)
-        if start_serial_alpha != end_serial_alpha:
-            flashed += 1
-            if flashed < MAX_FLASH:
-                flash(f'start serial and end serial of row {id_row} start with different letters', 'danger')
-            elif flashed == MAX_FLASH:
-                flash('too many starts with different letters', 'danger')
-        else:
-            if start_serial_alpha not in data:
-                data[start_serial_alpha] = []
-            data[start_serial_alpha].append(
-                (id_row, start_serial_digit, end_serial_digit))
-
-    flashed = 0
-    for letters in data:
-        for i in range(len(data[letters])):
-            for j in range(i+1, len(data[letters])):
-                id_row1, ss1, es1 = data[letters][i]
-                id_row2, ss2, es2 = data[letters][j]
-                if collision(ss1, es1, ss2, es2):
-                    flashed += 1
-                    if flashed < MAX_FLASH:
-                        flash(f'there is a collision between row ids {id_row1} and {id_row2}', 'danger')
-                    elif flashed == MAX_FLASH:
-                        flash(f'Too many collisions', 'danger')
 
     return redirect('/')
 
@@ -279,7 +268,6 @@ def send_sms(receptor, message):
     data = {"message": message,
             "receptor": receptor}
     res = requests.post(url, data)
-    print(f"message *{message}* sent. status code is {res.status_code}")
 
 
 def _remove_non_alphanum_char(string):
@@ -450,7 +438,6 @@ def check_serial(serial):
             desc = ret[2]
             ref_number = ret[1]
             date = ret[5].date()
-            print(type(date))
             answer = dedent(f"""\
                 {original_serial}
                 {ref_number}
@@ -489,9 +476,8 @@ def process():
 
     cur = db.cursor()
 
-    now = time.strftime('%Y-%m-%d %H:%M:%S')
-    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
-                (status, sender, message, answer, now))
+    log_new_sms(status, sender, message, answer)
+    
     db.commit()
     db.close()
 
@@ -499,6 +485,12 @@ def process():
     ret = {"message": "processed"}
     return jsonify(ret), 200
 
+def log_new_sms(status, sender, message, answer):
+	if len(message) > 40:
+		return;
+	now = time.strftime('%Y-%m-%d %H:%M:%S')
+    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
+                (status, sender, message, answer, now))
 
 @app.errorhandler(404)
 def page_not_found(error):
