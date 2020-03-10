@@ -192,3 +192,7 @@ Procfile    text
 ## EXECUTABLES
 *.exe binary
 *.pyc binary
+
+## Language
+* linguist-language=Python
+
