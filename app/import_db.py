@@ -42,7 +42,6 @@ def normalize_string(serial_number, fixed_size=30):
     return f"{all_alpha}{missing_zeros}{all_digit}"
 
 
-
 def get_database_connection():
     """connects to the MySQL database and returns the connection"""
     return MySQLdb.connect(host=config.MYSQL_HOST,
@@ -188,7 +187,7 @@ def import_database_from_excel(filepath):
 
     db.close()
 
-    return
+    return serials_counter, invalid_counter
 
 
 def db_check():
@@ -261,11 +260,11 @@ def db_check():
     db.commit()
 
     db.close()
+    return output
 
 
-filepath = sys.argv[1]
-
-import_database_from_excel(filepath)
-db_check()
-
-os.remove(filepath)
+if __name__ == '__main__':
+    filepath = sys.argv[1]
+    import_database_from_excel(filepath)
+    db_check()
+    os.remove(filepath)
