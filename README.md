@@ -40,4 +40,5 @@ USE smsmysql;
 CREATE USER 'smsmysql'@'localhost' IDENTIFIED BY 'test' PASSWORD NEVER EXPIRE;
 GRANT ALL PRIVILEGES ON smsmysql.* TO 'smsmysql'@'localhost';
 ```
+[Here](https://www.digitalocean.com/community/tutorials/how-to-create-a-new-user-and-grant-permissions-in-mysql) is a complete documentation
 
