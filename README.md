@@ -41,3 +41,4 @@ CREATE USER 'smsmysql'@'localhost' IDENTIFIED BY 'test' PASSWORD NEVER EXPIRE;
 GRANT ALL PRIVILEGES ON smsmysql.* TO 'smsmysql'@'localhost';
 ```
 
+if you have any problem with mysql_config from pip checkout [Here](https://stackoverflow.com/questions/7475223/mysql-config-not-found-when-installing-mysqldb-python-interface)
