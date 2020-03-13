@@ -386,11 +386,9 @@ def process():
 
 def log_new_sms(status, sender, message, answer, cur):
     if len(message) > 40:
-        return;
+        return
     now = time.strftime('%Y-%m-%d %H:%M:%S')
-    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
-                (status, sender, message, answer, now))
-
+    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)", (status, sender, message, answer, now))
 
 @app.errorhandler(404)
 def page_not_found(error):
