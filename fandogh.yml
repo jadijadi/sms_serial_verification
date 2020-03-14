@@ -1,0 +1,48 @@
+kind: ManagedService
+name: smsdb
+spec:
+  service_name: mysql
+  version: 5.7
+  parameters:
+    - name: phpmyadmin_enabled
+      value: true
+    - name: mysql_root_password
+      value: root
+  resources:
+    memory: 200Mi
+
+---
+
+kind: ExternalService
+name: sms-serial-verification
+spec:
+  image: "hologramir/sms_serial_verification:${IMAGE_VERSION}"
+  image_pull_policy: Always
+  env:
+    - name: API_KEY
+      value: "${API_KEY}"
+      hidden: true
+    - name: MYSQL_HOST
+      value: "${MYSQL_HOST}"
+      hidden: true
+    - name: MYSQL_USERNAME
+      value: "${MYSQL_USERNAME}"
+      hidden: true
+    - name: MYSQL_PASSWORD
+      value: "${MYSQL_PASSWORD}"
+      hidden: true
+    - name: CALL_BACK_TOKEN
+        value: "${CALL_BACK_TOKEN}"
+        hidden: true
+    - name: USERNAME
+        value: "${USERNAME}"
+        hidden: true
+    - name: PASSWORD
+        value: "${PASSWORD}"
+        hidden: true
+    - name: SECRET_KEY
+        value: "${SECRET_KEY}"
+        hidden: true
+    - name: REMOTE_CALL_API_KEY
+        value: "${REMOTE_CALL_API_KEY}"
+        hidden: true

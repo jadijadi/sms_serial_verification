@@ -1,0 +1,54 @@
+name: Deploy into Fandogh production
+
+on:
+  push:
+    branches:
+     - master
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.7
+      uses: actions/setup-python@v1
+      with:
+        python-version: 3.7
+    - name: Install dependencies
+      run: |
+        pip install fandogh_cli --upgrade
+    - name: Dockerize and deploy
+      env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+        FANDOGH_USERNAME: ${{ secrets.FANDOGH_USERNAME }}
+        FANDOGH_PASSWORD: ${{ secrets.FANDOGH_PASSWORD }}
+        API_KEY: ${{ secrets.API_KEY }}
+        MYSQL_HOST: ${{ secrets.MYSQL_HOST }}
+        MYSQL_USERNAME: ${{ secrets.MYSQL_USERNAME }}
+        MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+        USERNAME: ${{ secrets.USERNAME }}
+        PASSWORD: ${{ secrets.PASSWORD }}
+        SECRET_KEY: ${{ secrets.SECRET_KEY }}
+        REMOTE_CALL_API_KEY: ${{ secrets.REMOTE_CALL_API_KEY }}
+
+      run: |
+        VERSION=`uuidgen`
+        docker login --username $DOCKERHUB_USERNAME --password $DOCKERHUB_PASSWORD
+        # Change hologramir to a dockerhub organization that DOCKERHUB_USERNAME has access to.
+        docker build -t hologramir/sms_serial_verification:$VERSION .
+        docker push hologramir/sms_serial_verification:$VERSION
+
+        COLLECT_ERROR=1 fandogh login --username $FANDOGH_USERNAME --password $FANDOGH_PASSWORD
+        fandogh service apply -f fandogh.yml -p IMAGE_VERSION=$VERSION \
+        -p API_KEY \
+        -p MYSQL_HOST \
+        -p MYSQL_USERNAME \
+        -p MYSQL_PASSWORD \
+        -p CALL_BACK_TOKEN \
+        -p USERNAME \
+        -p PASSWORD \
+        -p SECRET_KEY \
+        -p REMOTE_CALL_API_KEY

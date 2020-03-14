@@ -41,3 +41,42 @@ CREATE USER 'smsmysql'@'localhost' IDENTIFIED BY 'test' PASSWORD NEVER EXPIRE;
 GRANT ALL PRIVILEGES ON smsmysql.* TO 'smsmysql'@'localhost';
 ```
 
+## How to deploy manually on Fandogh
+
+
+In order to deploy the service on fandogh run the following command:
+Given that you set environment variable for all the required parameters on your machine.
+```
+fandogh service apply -f fandogh.yml \
+-p IMAGE_VERSION=WHAT_VERSION_YOU_WANT_TO_DEPLOY? \ 
+-p API_KEY \
+-p MYSQL_HOST \ 
+-p MYSQL_USERNAME \
+-p MYSQL_PASSWORD \
+-p CALL_BACK_TOKEN \
+-p USERNAME \
+-p PASSWORD \ 
+-p SECRET_KEY \ 
+-p REMOTE_CALL_API_KEY
+```
+
+## How to use Github Actions
+
+The only thing you need to do is clarifying the following secrets in the settings of your repository
+
+| Secret Name | Description |
+|-------------|-------------| 
+|DOCKERHUB_USERNAME| Your username in docker hub |
+|DOCKERHUB_PASSWORD| Your password in docker hub |
+|FANDOGH_USERNAME| Your username in Fandogh|
+|FANDOGH_PASSWORD| Your password in Fandogh|
+|API_KEY| TODO |
+|MYSQL_HOST| TODO|
+|MYSQL_USERNAME | TODO |
+|MYSQL_PASSWORD | TODO | 
+|USERNAME | TODO|
+|PASSWORD| TODO| 
+|SECRET_KEY | TODO |
+|REMOTE_CALL_API_KEY | TODO |
+
+Every time you merge the new changes into the master branch. it will be deployed automatically on [Fandogh](https://fandogh.cloud).  
