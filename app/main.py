@@ -84,11 +84,11 @@ def db_status():
     
     # collect some stats for the GUI
     # execute_and_fetchone method return "error" if raise error. can change "error" with on_error_value key
-    num_serials = utils.execute_and_fetchone(cur, "SELECT count(*) FROM serials")
-    num_invalids = utils.execute_and_fetchone(cur, "SELECT count(*) FROM invalids")
-    log_import = utils.execute_and_fetchone(cur, "SELECT log_value FROM logs WHERE log_name = 'import'")
-    log_filename = utils.execute_and_fetchone(cur, "SELECT log_value FROM logs WHERE log_name = 'db_filename'")
-    log_db_check = utils.execute_and_fetchone(cur, "SELECT log_value FROM logs WHERE log_name = 'db_check'")
+    num_serials = utils.execute_and_fetchone(cur, "SELECT count(*) FROM serials", on_error='can not query serials count')
+    num_invalids = utils.execute_and_fetchone(cur, "SELECT count(*) FROM invalids", on_error='can not query invalid count')
+    log_import = utils.execute_and_fetchone(cur, "SELECT log_value FROM logs WHERE log_name = 'import'", on_error='can not read import log results... yet')
+    log_filename = utils.execute_and_fetchone(cur, "SELECT log_value FROM logs WHERE log_name = 'db_filename'", on_error='can not read db filename from database')
+    log_db_check = utils.execute_and_fetchone(cur, "SELECT log_value FROM logs WHERE log_name = 'db_check'", on_error='Can not read db_check logs... yet')
     
     return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids, 
                                                    'log_import': log_import, 'log_db_check': log_db_check, 'log_filename': log_filename})
@@ -113,6 +113,7 @@ def home():
         if file and allowed_file(file.filename):
             #TODO: is space find in a file name? check if it works
             filename = secure_filename(file.filename)
+            filename.replace(' ', '_') # no space in filenames! because we will call them as command line arguments
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             subprocess.Popen(["python", "import_db.py", file_path])
@@ -228,7 +229,6 @@ def send_sms(receptor, message):
     data = {"message": message,
             "receptor": receptor}
     res = requests.post(url, data)
-    print(f"message *{message}* sent. status code is {res.status_code}")
 
 
 def _remove_non_alphanum_char(string):
@@ -298,7 +298,6 @@ def check_serial(serial):
             desc = ret[2]
             ref_number = ret[1]
             date = ret[5].date()
-            print(type(date))
             answer = dedent(f"""\
                 {original_serial}
                 {ref_number}
@@ -337,9 +336,8 @@ def process():
 
     cur = db.cursor()
 
-    now = time.strftime('%Y-%m-%d %H:%M:%S')
-    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
-                (status, sender, message, answer, now))
+    log_new_sms(status, sender, message, answer, cur)
+    
     db.commit()
     db.close()
 
@@ -347,7 +345,12 @@ def process():
     ret = {"message": "processed"}
     return jsonify(ret), 200
 
-
+def log_new_sms(status, sender, message, answer, cur):
+    if len(message) > 40:
+        return
+    now = time.strftime('%Y-%m-%d %H:%M:%S')
+    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)", (status, sender, message, answer, now))
+    
 @app.errorhandler(404)
 def page_not_found(error):
     """ returns 404 page"""

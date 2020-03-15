@@ -129,7 +129,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-config.py
 
 # Created by https://www.gitignore.io/api/windows,macos,linux
 # Edit at https://www.gitignore.io/?templates=windows,macos,linux
@@ -207,4 +206,10 @@ $RECYCLE.BIN/
 
 # pycharm files
 .idea/
+
+# special files
+config.py
+
+### Fandogh files
 .fandogh/
+*.zip 
