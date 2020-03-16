@@ -413,7 +413,7 @@ def create_sms_table():
             date DATETIME, INDEX(date, status));""")
         db.commit()
     except Exception as e:
-        flash(f'Error creating PROCESSED_SMS table; {e}', 'danger')
+        flash(f'Error while creating PROCESSED_SMS table on database. {e}', 'danger')
         
     db.close()
 
