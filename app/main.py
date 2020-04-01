@@ -398,7 +398,7 @@ def page_not_found(error):
 
 
 def create_sms_table():
-    """Ctreates PROCESSED_SMS table on database if it's not exists."""
+    """Creates PROCESSED_SMS table on database if it's not exists."""
 
     db = get_database_connection()
 
