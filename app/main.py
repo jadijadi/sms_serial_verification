@@ -84,31 +84,31 @@ def db_status():
     try:
         cur.execute("SELECT count(*) FROM serials")
         num_serials = cur.fetchone()[0]
-    except BaseException:
+    except:
         num_serials = 'can not query serials count'
 
     try:
         cur.execute("SELECT count(*) FROM invalids")
         num_invalids = cur.fetchone()[0]
-    except BaseException:
+    except:
         num_invalids = 'can not query invalid count'
 
     try:
         cur.execute("SELECT log_value FROM logs WHERE log_name = 'import'")
         log_import = cur.fetchone()[0]
-    except BaseException:
+    except:
         log_import = 'can not read import log results... yet'
 
     try:
         cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_filename'")
         log_filename = cur.fetchone()[0]
-    except BaseException:
+    except:
         log_filename = 'can not read db filename from database'
 
     try:
         cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_check'")
         log_db_check = cur.fetchone()[0]
-    except BaseException:
+    except:
         log_db_check = 'Can not read db_check logs... yet'
 
     return render_template(
@@ -168,28 +168,28 @@ def home():
     try:
         cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
         num_ok = cur.fetchone()[0]
-    except BaseException:
+    except:
         num_ok = 'error'
 
     try:
         cur.execute(
             "SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
         num_failure = cur.fetchone()[0]
-    except BaseException:
+    except:
         num_failure = 'error'
 
     try:
         cur.execute(
             "SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
         num_double = cur.fetchone()[0]
-    except BaseException:
+    except:
         num_double = 'error'
 
     try:
         cur.execute(
             "SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
         num_notfound = cur.fetchone()[0]
-    except BaseException:
+    except:
         num_notfound = 'error'
 
     return render_template(
@@ -445,7 +445,7 @@ def create_sms_table():
             answer VARCHAR(400),
             date DATETIME, INDEX(date, status));""")
         db.commit()
-    except Exception as e:
+    except as e:
         flash(f'Error creating PROCESSED_SMS table; {e}', 'danger')
 
     db.close()
