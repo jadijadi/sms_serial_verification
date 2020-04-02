@@ -139,7 +139,7 @@ def home():
             file.save(file_path)
             subprocess.Popen(["python", "import_db.py", file_path])
             flash('File uploaded. Will be imported soon. follow from DB Status Page', 'info')
-            return redirect('/')
+            return redirect(url_for('home'))
 
     db = get_database_connection()
 
@@ -188,13 +188,13 @@ def login():
     """ user login: only for admin user (system has no other user than admin)
     Note: there is a 10 tries per minute limitation to admin login to avoid minimize password factoring"""
     if current_user.is_authenticated:
-        return redirect('/')
+        return redirect(url_for('home'))
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
         if password == config.PASSWORD and username == config.USERNAME:
             login_user(user)
-            return redirect('/')
+            return redirect(url_for('home'))
         else:
             return abort(401)
     else:
@@ -220,7 +220,7 @@ def check_one_serial():
     status, answer = check_serial(serial_to_check)
     flash(f'{status} - {answer}', 'info')
 
-    return redirect('/')
+    return redirect(url_for('home'))
 
 
 @app.route("/logout")
@@ -229,15 +229,15 @@ def logout():
     """ logs out the admin user"""
     logout_user()
     flash('Logged out', 'success')
-    return redirect('/login')
+    return redirect(url_for('login'))
 
 
-#
+
 @app.errorhandler(401)
 def unauthorized(error):
     """ handling login failures"""
     flash('Login problem', 'danger')
-    return redirect('/login')
+    return redirect(url_for('login'))
 
 
 # callback to reload the user object
