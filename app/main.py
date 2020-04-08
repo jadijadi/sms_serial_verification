@@ -155,29 +155,25 @@ def home():
         smss.append({'status': status, 'sender': sender, 'message': message, 'answer': answer, 'date': date})
 
     # collect some stats for the GUI
+    num_ok = 'error'
+    num_failure = 'error'
+    num_double = 'error'
+    num_notfound = 'error'
     try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
-        num_ok = cur.fetchone()[0]
-    except: 
-        num_ok = 'error'
+        cur.execute("SELECT status, COUNT(*) FROM PROCESSED_SMS GROUP BY status")
+        all_stats = cur.fetchall()
+        for stat in all_stats:
+            if stat[0] == 'OK':
+                num_ok = stat[1]
+            elif stat[0] == 'FAILURE':
+                num_failure = stat[1]
+            elif stat[0] == 'DOUBLE':
+                num_double = stat[1]
+            elif stat[0] == 'NOT-FOUND':
+                num_notfound = stat[1]
 
-    try:        
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
-        num_failure = cur.fetchone()[0]
     except:
-        num_failure = 'error'
-
-    try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
-        num_double = cur.fetchone()[0]
-    except:
-        num_double = 'error'
-
-    try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
-        num_notfound = cur.fetchone()[0]
-    except:
-        num_notfound = 'error'
+        pass
 
     return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_double,
                                                'notfound': num_notfound})
