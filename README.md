@@ -7,7 +7,7 @@
 This project is done for Altech (Schneider Electric Iran) as an educational series. 
 
 <div dir="rtl"> 
-این پروژه ای است به سفارش آلتک (اشنایدر الکتریک ایران) برای سنجش صحت شماره سریال ها با پیامک. من پروژه رو ازشون قبول کردم به این شرط که همه مراحلش رو ضبط و منتشر کنم تا نمونه ای باشه از انجام یک پروژه واقعی توسط یک فری لنسر. در این پروژه از تکنولوژی های زیر استفاده می شه:
+این پروژه ای است به سفارش آلتک (اشنایدر الکتریک ایران) برای سنجش صحت شماره سریال ها با پیامک. من پروژه رو ازشون قبول کردم به این شرط که همه مراحلش رو ضبط و منتشر کنم تا نمونه ای باشه از انجام یک پروژه واقعی توسط یک فریلنسر. در این پروژه از تکنولوژی های زیر استفاده می شه:
 
 - پایتون
 - فلسک
@@ -34,7 +34,7 @@ Every single step of this project is screen captures and you can follow them [On
 
 > Note: this is just a sample. You have to find your own systems commands.
 
-```
+```SQL
 CREATE DATABASE smsmysql;
 USE smsmysql;
 CREATE USER 'smsmysql'@'localhost' IDENTIFIED BY 'test' PASSWORD NEVER EXPIRE;
