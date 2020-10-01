@@ -45,6 +45,11 @@ from app.tools import (
 
 class User(UserMixin):
     """ A minimal and singleton user class used only for administrative tasks """
+    instance = None
+    def __new__(cls, *args, **kwargs):
+        if cls.instance is None:
+            cls.instance = super().__new__(cls)
+        return cls.instance
 
     def __init__(self, id):
         self.id = id
