@@ -1,7 +1,6 @@
-from app import app, db
 import re
 import requests
-import MySQLdb
+from app import app, db
 
 
 def allowed_file(filename: str):

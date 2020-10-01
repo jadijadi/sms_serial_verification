@@ -1,17 +1,10 @@
-import datetime
 import os
-import time
 import sys
-import re
-from app.models import Logs, Serials, Invalids, ProcessedSMS
-from app import db
-import MySQLdb
 from pandas import read_excel
+from app.models import Logs, Serials, Invalids
+from app import db
 from app.tools import (
     normalize_string,
-    _remove_non_alphanum_char,
-    _translate_numbers,
-    _translate_numbers,
     model_exists
 )
 
@@ -21,8 +14,8 @@ MAX_FLASH = 100
 def import_database_from_excel(filepath):
     """ gets an excel file name and imports lookup data (data and failures) from it
     the first (0) sheet contains serial data like:
-     Row	Reference Number	Description	Start Serial	End Serial	Date
-    and the 2nd (1) contains a column of invalid serials. 
+    Row	Reference Number	Description	Start Serial	End Serial	Date
+    and the 2nd (1) contains a column of invalid serials.
 
     This data will be writeen into the sqlite database located at config.DATABASE_FILE_PATH
     in two tables. "serials" and "invalids"
@@ -47,7 +40,10 @@ def import_database_from_excel(filepath):
 
     # insert some place holder logs
     second_log = Logs(log_name='import', log_value='Import started. logs will appear when its done')
-    third_log = Logs(log_name='db_check', log_value='DB check will be run after the insert is finished')
+    third_log = Logs(
+        log_name='db_check',
+        log_value='DB check will be run after the insert is finished'
+    )
     db.session.add_all([second_log, third_log])
     db.session.commit()
     df = read_excel(filepath, 0)
@@ -65,20 +61,26 @@ def import_database_from_excel(filepath):
         try:
             start_serial = normalize_string(start_serial)
             end_serial = normalize_string(end_serial)
-            new_serial = Serials(id=line, ref=ref, description=description, start_serial=start_serial, end_serial=end_serial, date=date)
+            new_serial = Serials(id=line,
+                                 date=date,
+                                 description=description,
+                                 end_serial=end_serial,
+                                 ref=ref,
+                                 start_serial=start_serial
+                                 )
             db.session.add(new_serial)
             db.session.commit()
             serials_counter += 1
         except Exception as e:
             total_flashes += 1
-            if total_flashes < MAX_FLASH:                
+            if total_flashes < MAX_FLASH:
                 output.append(
                     f'Error inserting line {line_number} from serials sheet SERIALS, {e}')
             elif total_flashes == MAX_FLASH:
                 output.append(f'Too many errors!')
         if line_number % 1000 == 0:
             try:
-                db.commit()
+                db.session.commit()
             except Exception as e:
                 output.append(
                     f'Problem commiting serials into db at around record {line_number} (or previous 1000 ones); {e}')
@@ -107,7 +109,7 @@ def import_database_from_excel(filepath):
 
         if line_number % 1000 == 0:
             try:
-                db.commit()
+                db.session.commit()
             except Exception as e:
                 output.append(
                     f'Problem commiting invalid serials into db at around record {line_number} (or previous 1000 ones); {e}')
@@ -130,7 +132,10 @@ def db_check():
 
     # db = get_database_connection()
     # cur = db.cursor()
-    new_log = Logs(log_name='db_check', log_value='DB check started... wait for the results. it may take a while')
+    new_log = Logs(
+        log_name='db_check',
+        log_value='DB check started... wait for the results. it may take a while'
+        )
     db.session.add(new_log)
     db.session.commit()
     def collision(s1, e1, s2, e2):
@@ -184,7 +189,7 @@ def db_check():
                 if collision(ss1, es1, ss2, es2):
                     all_problems.append(
                         f'there is a collision between row ids {id_row1} and {id_row2}')
-    
+
     all_problems.reverse()
     output = "\n".join(all_problems)
     logs = Logs.query.filter_by(log_name='db_check').all()

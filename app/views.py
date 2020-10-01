@@ -1,11 +1,7 @@
 import os
-import re
 from textwrap import dedent
 import subprocess
 import time
-import requests
-import MySQLdb
-
 from flask import (
     abort,
     flash,
@@ -16,7 +12,6 @@ from flask import (
     url_for
 )
 from flask_login import (
-    UserMixin,
     current_user,
     login_required,
     login_user,
@@ -24,9 +19,13 @@ from flask_login import (
 )
 from werkzeug.utils import secure_filename
 
-from app import app, db, limiter, login_manager
-from app.models import User. Logs, Serials, Invalids, ProcessedSMS
-from app.tools import normalize_string, _remove_non_alphanum_char, _translate_numbers, allowed_file, send_sms
+from app import app, db, limiter
+from app.models import User, Logs, Serials, Invalids, ProcessedSMS
+from app.tools import (
+        normalize_string,
+        allowed_file,
+        send_sms
+)
 
 
 user = User(0)
@@ -134,14 +133,14 @@ def home():
 
     # collect some stats for the GUI
     return render_template(
-            'index.html',
-            data={
-                'smss': smss,
-                'ok': num_ok,
-                'failure': num_failure,
-                'double': num_double,
-                'notfound': num_notfound
-            })
+        'index.html',
+        data={
+            'smss': smss,
+            'ok': num_ok,
+            'failure': num_failure,
+            'double': num_double,
+            'notfound': num_notfound
+        })
 
 
 @app.route("/login", methods=["GET", "POST"])
