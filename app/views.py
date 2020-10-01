@@ -32,34 +32,20 @@ from flask_login import (
     logout_user,
 )
 from pandas import read_excel
-
-app = Flask(__name__)
-limiter = Limiter(app, key_func=get_remote_address)
-
-MAX_FLASH = 10
-UPLOAD_FOLDER = config.UPLOAD_FOLDER
-ALLOWED_EXTENSIONS = config.ALLOWED_EXTENSIONS
-CALL_BACK_TOKEN = config.CALL_BACK_TOKEN
-
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-# flask-login
-login_manager = LoginManager()
-login_manager.init_app(app)
-login_manager.login_view = "login"
-login_manager.login_message_category = 'danger'
-
-
-def allowed_file(filename):
-    """ checks the extension of the passed filename to be in the allowed extensions"""
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
-
-app.config.update(SECRET_KEY=config.SECRET_KEY)
+from app import app, limiter, login_manager
+from app.tools import (
+    _remove_non_alphanum_char,
+    _translate_numbers,
+    allowed_file,
+    get_database_connection,
+    normalize_string,
+    send_sms
+)
 
 
 class User(UserMixin):
     """ A minimal and singleton user class used only for administrative tasks """
+
     def __init__(self, id):
         self.id = id
 
@@ -70,16 +56,14 @@ class User(UserMixin):
 user = User(0)
 
 
-@app.route('/db_status/', methods=['GET'])
+@app.route('/db_status/')
 @login_required
 def db_status():
-
     """ show some status about the DB """
 
-    
     db = get_database_connection()
     cur = db.cursor()
-    
+
     # collect some stats for the GUI
     try:
         cur.execute("SELECT count(*) FROM serials")
@@ -111,8 +95,14 @@ def db_status():
     except:
         log_db_check = 'Can not read db_check logs... yet'
 
-    return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids, 
-                                                   'log_import': log_import, 'log_db_check': log_db_check, 'log_filename': log_filename})
+    return render_template(
+        'db_status.html',
+        data={
+            'serials': num_serials,
+            'invalids': num_invalids,
+            'log_import': log_import,
+            'log_db_check': log_db_check,
+            'log_filename': log_filename})
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -132,19 +122,22 @@ def home():
             flash('No selected file', 'danger')
             return redirect(request.url)
         if file and allowed_file(file.filename):
-            #TODO: is space find in a file name? check if it works
+            # TODO: is space find in a file name? check if it works
             filename = secure_filename(file.filename)
-            filename.replace(' ', '_') # no space in filenames! because we will call them as command line arguments
+            # no space in filenames! because we will call them as command line
+            # arguments
+            filename.replace(' ', '_')
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             subprocess.Popen(["python", "import_db.py", file_path])
-            flash('File uploaded. Will be imported soon. follow from DB Status Page', 'info')
-            return redirect('/')
+            flash(
+                'File uploaded. Will be imported soon. follow from DB Status Page',
+                'info')
+            return redirect(url_for('home'))
 
     db = get_database_connection()
 
     cur = db.cursor()
-
 
     # get last 5000 sms
     cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
@@ -152,16 +145,17 @@ def home():
     smss = []
     for sms in all_smss:
         status, sender, message, answer, date = sms
-        smss.append({'status': status, 'sender': sender, 'message': message, 'answer': answer, 'date': date})
+        smss.append({'status': status, 'sender': sender,
+                     'message': message, 'answer': answer, 'date': date})
 
     # collect some stats for the GUI
     try:
         cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
         num_ok = cur.fetchone()[0]
-    except: 
+    except:
         num_ok = 'error'
 
-    try:        
+    try:
         cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
         num_failure = cur.fetchone()[0]
     except:
@@ -179,8 +173,15 @@ def home():
     except:
         num_notfound = 'error'
 
-    return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_double,
-                                               'notfound': num_notfound})
+    return render_template(
+        'index.html',
+        data={
+            'smss': smss,
+            'ok': num_ok,
+            'failure': num_failure,
+            'double': num_double,
+            'notfound': num_notfound})
+
 
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
@@ -188,20 +189,20 @@ def login():
     """ user login: only for admin user (system has no other user than admin)
     Note: there is a 10 tries per minute limitation to admin login to avoid minimize password factoring"""
     if current_user.is_authenticated:
-        return redirect('/')
+        return redirect(url_for('home'))
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if password == config.PASSWORD and username == config.USERNAME:
+        if password == app.config['PASSWORD'] and username == app.config['USERNAME']:
             login_user(user)
-            return redirect('/')
+            return redirect(url_for('home'))
         else:
             return abort(401)
     else:
         return render_template('login.html')
 
 
-@app.route(f"/v1/{config.REMOTE_CALL_API_KEY}/check_one_serial/<serial>", methods=["GET"])
+@app.route(f"/v1/{app.config['REMOTE_CALL_API_KEY']}/check_one_serial/<serial>")
 def check_one_serial_api(serial):
     """ to check whether a serial number is valid or not using api
     caller should use something like /v1/ABCDSECRET/cehck_one_serial/AA10000
@@ -220,7 +221,7 @@ def check_one_serial():
     status, answer = check_serial(serial_to_check)
     flash(f'{status} - {answer}', 'info')
 
-    return redirect('/')
+    return redirect(url_for('home'))
 
 
 @app.route("/logout")
@@ -229,15 +230,14 @@ def logout():
     """ logs out the admin user"""
     logout_user()
     flash('Logged out', 'success')
-    return redirect('/login')
+    return redirect(url_for('login'))
 
 
-#
 @app.errorhandler(401)
 def unauthorized(error):
     """ handling login failures"""
     flash('Login problem', 'danger')
-    return redirect('/login')
+    return redirect(url_for('login'))
 
 
 # callback to reload the user object
@@ -253,55 +253,6 @@ def health_check():
     return jsonify(ret), 200
 
 
-def get_database_connection():
-    """connects to the MySQL database and returns the connection"""
-    return MySQLdb.connect(host=config.MYSQL_HOST,
-                           user=config.MYSQL_USERNAME,
-                           passwd=config.MYSQL_PASSWORD,
-                           db=config.MYSQL_DB_NAME,
-                           charset='utf8')
-
-
-def send_sms(receptor, message):
-    """ gets a MSISDN and a messaage, then uses KaveNegar to send sms."""
-    url = f'https://api.kavenegar.com/v1/{config.API_KEY}/sms/send.json'
-    data = {"message": message,
-            "receptor": receptor}
-    res = requests.post(url, data)
-
-
-def _remove_non_alphanum_char(string):
-    return re.sub(r'\W+', '', string)
-
-
-def _translate_numbers(current, new, string):
-    translation_table = str.maketrans(current, new)
-    return string.translate(translation_table)
-
-def normalize_string(serial_number, fixed_size=30):
-    """ gets a serial number and standardize it as following:
-    >> converts(removes others) all chars to English upper letters and numbers
-    >> adds zeros between letters and numbers to make it fixed length """
-
-    serial_number = _remove_non_alphanum_char(serial_number)
-    serial_number = serial_number.upper()
-
-    persian_numerals = '۱۲۳۴۵۶۷۸۹۰'
-    arabic_numerals = '١٢٣٤٥٦٧٨٩٠'
-    english_numerals = '1234567890'
-
-    serial_number = _translate_numbers(persian_numerals, english_numerals, serial_number)
-    serial_number = _translate_numbers(arabic_numerals, english_numerals, serial_number)
-
-    all_digit = "".join(re.findall("\d", serial_number))
-    all_alpha = "".join(re.findall("[A-Z]", serial_number))
-
-    missing_zeros = "0" * (fixed_size - len(all_alpha + all_digit))
-
-    return f"{all_alpha}{missing_zeros}{all_digit}"
-
-
-
 def check_serial(serial):
     """ gets one serial number and returns appropriate
     answer to that, after looking it up in the db
@@ -312,7 +263,8 @@ def check_serial(serial):
     db = get_database_connection()
 
     with db.cursor() as cur:
-        results = cur.execute("SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
+        results = cur.execute(
+            "SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
         if results > 0:
             answer = dedent(f"""\
                 {original_serial}
@@ -324,7 +276,10 @@ def check_serial(serial):
 
             return 'FAILURE', answer
 
-        results = cur.execute("SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s", (serial, serial))
+        results = cur.execute(
+            "SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s",
+            (serial,
+             serial))
         if results > 1:
             answer = dedent(f"""\
                 {original_serial}
@@ -347,7 +302,6 @@ def check_serial(serial):
                 021-22038385""")
             return 'OK', answer
 
-
     answer = dedent(f"""\
         {original_serial}
         این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
@@ -359,7 +313,7 @@ def check_serial(serial):
     return 'NOT-FOUND', answer
 
 
-@app.route(f'/v1/{CALL_BACK_TOKEN}/process', methods=['POST'])
+@app.route(f"/v1/{app.config['CALL_BACK_TOKEN']}/process", methods=['POST'])
 def process():
     """ this is a call back from KaveNegar. Will get sender and message and
     will check if it is valid, then answers back.
@@ -376,7 +330,7 @@ def process():
     cur = db.cursor()
 
     log_new_sms(status, sender, message, answer, cur)
-    
+
     db.commit()
     db.close()
 
@@ -384,17 +338,24 @@ def process():
     ret = {"message": "processed"}
     return jsonify(ret), 200
 
+
 def log_new_sms(status, sender, message, answer, cur):
     if len(message) > 40:
         return
     now = time.strftime('%Y-%m-%d %H:%M:%S')
-    cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)", (status, sender, message, answer, now))
-    
+    cur.execute(
+        "INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
+        (status,
+         sender,
+         message,
+         answer,
+         now))
+
+
 @app.errorhandler(404)
 def page_not_found(error):
     """ returns 404 page"""
     return render_template('404.html'), 404
-
 
 
 def create_sms_table():
@@ -414,7 +375,7 @@ def create_sms_table():
         db.commit()
     except Exception as e:
         flash(f'Error creating PROCESSED_SMS table; {e}', 'danger')
-        
+
     db.close()
 
 

@@ -7,49 +7,15 @@ import re
 import config
 import MySQLdb
 from pandas import read_excel
+from app.tools import (
+        _remove_non_alphanum_char,
+        _translate_numbers,
+        get_database_connection,
+        normalize_string
+)
 
 MAX_FLASH = 100
 
-def _remove_non_alphanum_char(string):
-    return re.sub(r'\W+', '', string)
-
-def _translate_numbers(current, new, string):
-    translation_table = str.maketrans(current, new)
-    return string.translate(translation_table)
-
-def normalize_string(serial_number, fixed_size=30):
-    """ gets a serial number and standardize it as following:
-    >> converts(removes others) all chars to English upper letters and numbers
-    >> adds zeros between letters and numbers to make it fixed length """
-
-    serial_number = _remove_non_alphanum_char(serial_number)
-    serial_number = serial_number.upper()
-
-    persian_numerals = '۱۲۳۴۵۶۷۸۹۰'
-    arabic_numerals = '١٢٣٤٥٦٧٨٩٠'
-    english_numerals = '1234567890'
-
-    serial_number = _translate_numbers(
-        persian_numerals, english_numerals, serial_number)
-    serial_number = _translate_numbers(
-        arabic_numerals, english_numerals, serial_number)
-
-    all_digit = "".join(re.findall("\d", serial_number))
-    all_alpha = "".join(re.findall("[A-Z]", serial_number))
-
-    missing_zeros = "0" * (fixed_size - len(all_alpha + all_digit))
-
-    return f"{all_alpha}{missing_zeros}{all_digit}"
-
-
-
-def get_database_connection():
-    """connects to the MySQL database and returns the connection"""
-    return MySQLdb.connect(host=config.MYSQL_HOST,
-                           user=config.MYSQL_USERNAME,
-                           passwd=config.MYSQL_PASSWORD,
-                           db=config.MYSQL_DB_NAME,
-                           charset='utf8')
 
 def import_database_from_excel(filepath):
     """ gets an excel file name and imports lookup data (data and failures) from it
