@@ -1,104 +1,83 @@
-import datetime
 import os
 import re
-import time
-import subprocess
 from textwrap import dedent
-
+import subprocess
+import time
 import requests
+import MySQLdb
+
 from flask import (
-    Flask,
-    Response,
     abort,
     flash,
     jsonify,
     redirect,
     render_template,
     request,
-    url_for,
+    url_for
 )
-from werkzeug.utils import secure_filename
-
-import config
-import MySQLdb
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from flask_login import (
-    LoginManager,
     UserMixin,
     current_user,
     login_required,
     login_user,
-    logout_user,
+    logout_user
 )
-from pandas import read_excel
-from app import app, limiter, login_manager
-from app.tools import (
-    _remove_non_alphanum_char,
-    _translate_numbers,
-    allowed_file,
-    get_database_connection,
-    normalize_string,
-    send_sms
-)
+from werkzeug.utils import secure_filename
+
+from app import app, db, limiter, login_manager
+from app.models import Logs, Serials, Invalids, ProcessedSMS
+from app.tools import normalize_string, _remove_non_alphanum_char, _translate_numbers, allowed_file, send_sms
+
+CALL_BACK_TOKEN = app.config['CALL_BACK_TOKEN']
+API_KEY = app.config['API_KEY']
+
 
 
 class User(UserMixin):
-    """ A minimal and singleton user class used only for administrative tasks """
-    instance = None
-    def __new__(cls, *args, **kwargs):
-        if cls.instance is None:
-            cls.instance = super().__new__(cls)
-        return cls.instance
-
+    """ A minimal and singleton user class used
+    only for administrative tasks
+    """
     def __init__(self, id):
         self.id = id
 
     def __repr__(self):
-        return "%d" % (self.id)
+        return f"{self.id}"
+
+
+@login_manager.user_loader
+def load_user(userid):
+    return User(userid)
 
 
 user = User(0)
 
 
-@app.route('/db_status/')
+@app.route('/db_status/', methods=['GET'])
 @login_required
 def db_status():
     """ show some status about the DB """
-
-    db = get_database_connection()
-    cur = db.cursor()
-
-    # collect some stats for the GUI
     try:
-        cur.execute("SELECT count(*) FROM serials")
-        num_serials = cur.fetchone()[0]
+        num_serials = len(Serials.query.all())
     except:
         num_serials = 'can not query serials count'
-
     try:
-        cur.execute("SELECT count(*) FROM invalids")
-        num_invalids = cur.fetchone()[0]
+        num_invalids = len(Invalids.query.all())
     except:
         num_invalids = 'can not query invalid count'
-
     try:
-        cur.execute("SELECT log_value FROM logs WHERE log_name = 'import'")
-        log_import = cur.fetchone()[0]
+        log_import = Logs.query.with_entities(Logs.log_value).filter_by(log_name='import').all()
     except:
         log_import = 'can not read import log results... yet'
-
     try:
-        cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_filename'")
-        log_filename = cur.fetchone()[0]
+        log_filename = Logs.query.with_entities(Logs.log_value).filter_by(log_name='db_filename').all()
     except:
         log_filename = 'can not read db filename from database'
-
     try:
-        cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_check'")
-        log_db_check = cur.fetchone()[0]
+        log_db_check = Logs.query.with_entities(Logs.log_value).filter_by(log_name='db_check').all()
     except:
         log_db_check = 'Can not read db_check logs... yet'
+
+
 
     return render_template(
         'db_status.html',
@@ -113,8 +92,10 @@ def db_status():
 @app.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
-    """ creates database if method is post otherwise shows the homepage with some stats
-    see import_database_from_excel() for more details on database creation"""
+    """ creates database if method is post
+        otherwise shows the homepage with some stats.
+        see import_database_from_excel() for more details on database creation
+    """
     if request.method == 'POST':
         # check if the post request has the file part
         if 'file' not in request.files:
@@ -140,65 +121,63 @@ def home():
                 'info')
             return redirect(url_for('home'))
 
-    db = get_database_connection()
-
-    cur = db.cursor()
-
     # get last 5000 sms
-    cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
-    all_smss = cur.fetchall()
+    all_smss = ProcessedSMS.query.order_by(ProcessedSMS.date.desc()).limit(5000).all()
     smss = []
     for sms in all_smss:
         status, sender, message, answer, date = sms
-        smss.append({'status': status, 'sender': sender,
-                     'message': message, 'answer': answer, 'date': date})
+        smss.append({'status': status,
+                     'sender': sender,
+                     'message': message,
+                     'answer': answer,
+                     'date': date
+                     })
 
-    # collect some stats for the GUI
     try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
-        num_ok = cur.fetchone()[0]
+        num_ok = len(ProcessedSMS.query.filter_by(status='OK').all())
     except:
         num_ok = 'error'
-
     try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
-        num_failure = cur.fetchone()[0]
+        num_failure = len(ProcessedSMS.query.filter_by(status='FAILURE').all())
     except:
         num_failure = 'error'
-
     try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
-        num_double = cur.fetchone()[0]
+        num_double = len(ProcessedSMS.query.filter_by(status='DOUBLE').all())
     except:
         num_double = 'error'
-
     try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
-        num_notfound = cur.fetchone()[0]
+        num_notfound = len(ProcessedSMS.query.filter_by(status='NOT-FOUND').all())
     except:
         num_notfound = 'error'
 
+
+
+    # collect some stats for the GUI
     return render_template(
-        'index.html',
-        data={
-            'smss': smss,
-            'ok': num_ok,
-            'failure': num_failure,
-            'double': num_double,
-            'notfound': num_notfound})
+            'index.html',
+            data={
+                'smss': smss,
+                'ok': num_ok,
+                'failure': num_failure,
+                'double': num_double,
+                'notfound': num_notfound
+            })
 
 
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
 def login():
     """ user login: only for admin user (system has no other user than admin)
-    Note: there is a 10 tries per minute limitation to admin login to avoid minimize password factoring"""
+        Note: there is a 10 tries per minute limitation to admin login
+        to avoid minimize password factoring
+    """
     if current_user.is_authenticated:
         return redirect(url_for('home'))
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if password == app.config['PASSWORD'] and username == app.config['USERNAME']:
+        if password == app.config['PASSWORD'] and \
+                username == app.config['USERNAME']:
             login_user(user)
             return redirect(url_for('home'))
         else:
@@ -245,15 +224,11 @@ def unauthorized(error):
     return redirect(url_for('login'))
 
 
-# callback to reload the user object
-@login_manager.user_loader
-def load_user(userid):
-    return User(userid)
-
-
 @app.route('/v1/ok')
 def health_check():
-    """ for system health check. calling it will answer with json message: ok """
+    """ for system health check.
+        calling it will answer with json message: ok
+    """
     ret = {'message': 'ok'}
     return jsonify(ret), 200
 
@@ -265,47 +240,44 @@ def check_serial(serial):
     original_serial = serial
     serial = normalize_string(serial)
 
-    db = get_database_connection()
+    query = Invalids.query.filter_by(invalid_serial=serial).all()
+    results = len(query)
+    if results > 0:
+        answer = dedent(f"""\
+            {original_serial}
+            این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
+            ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
+            FA1234567
+            شماره تماس با بخش پشتیبانی فروش شرکت التک:
+            021-22038385""")
 
-    with db.cursor() as cur:
-        results = cur.execute(
-            "SELECT * FROM invalids WHERE invalid_serial = %s", (serial,))
-        if results > 0:
-            answer = dedent(f"""\
-                {original_serial}
-                این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
-                ساختار صحیح شماره هولوگرام بصورت دو حرف انگلیسی و 7 یا 8 رقم در دنباله آن می باشد. مثال:
-                FA1234567
-                شماره تماس با بخش پشتیبانی فروش شرکت التک:
-                021-22038385""")
+        return 'FAILURE', answer
 
-            return 'FAILURE', answer
-
-        results = cur.execute(
-            "SELECT * FROM serials WHERE start_serial <= %s and end_serial >= %s",
-            (serial,
-             serial))
-        if results > 1:
-            answer = dedent(f"""\
-                {original_serial}
-                این شماره هولوگرام مورد تایید است.
-                برای اطلاعات بیشتر از نوع محصول با بخش پشتیبانی فروش شرکت التک تماس حاصل فرمایید:
-                021-22038385""")
-            return 'DOUBLE', answer
-        elif results == 1:
-            ret = cur.fetchone()
-            desc = ret[2]
-            ref_number = ret[1]
-            date = ret[5].date()
-            answer = dedent(f"""\
-                {original_serial}
-                {ref_number}
-                {desc}
-                Hologram date: {date}
-                Genuine product of Schneider Electric
-                شماره تماس با بخش پشتیبانی فروش شرکت التک:
-                021-22038385""")
-            return 'OK', answer
+    query = Serials.query.filter(
+                Serials.start_serial <= serial,
+                Serials.end_serial >= serial).all()
+    results = len(query)
+    if results > 1:
+        answer = dedent(f"""\
+            {original_serial}
+            این شماره هولوگرام مورد تایید است.
+            برای اطلاعات بیشتر از نوع محصول با بخش پشتیبانی فروش شرکت التک تماس حاصل فرمایید:
+            021-22038385""")
+        return 'DOUBLE', answer
+    elif results == 1:
+        ret = query[0]
+        desc = ret[2]
+        ref_number = ret[1]
+        date = ret[5].date()
+        answer = dedent(f"""\
+            {original_serial}
+            {ref_number}
+            {desc}
+            Hologram date: {date}
+            Genuine product of Schneider Electric
+            شماره تماس با بخش پشتیبانی فروش شرکت التک:
+            021-22038385""")
+        return 'OK', answer
 
     answer = dedent(f"""\
         {original_serial}
@@ -329,15 +301,7 @@ def process():
     message = data["message"]
 
     status, answer = check_serial(message)
-
-    db = get_database_connection()
-
-    cur = db.cursor()
-
-    log_new_sms(status, sender, message, answer, cur)
-
-    db.commit()
-    db.close()
+    log_new_sms(status, sender, message, answer, cur=None)
 
     send_sms(sender, answer)
     ret = {"message": "processed"}
@@ -348,42 +312,17 @@ def log_new_sms(status, sender, message, answer, cur):
     if len(message) > 40:
         return
     now = time.strftime('%Y-%m-%d %H:%M:%S')
-    cur.execute(
-        "INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)",
-        (status,
-         sender,
-         message,
-         answer,
-         now))
+    new_sms = ProcessedSMS(
+        status=status,
+        sender=sender,
+        message=message,
+        answer=answer,
+        date=now)
+    db.session.add(new_sms)
+    db.session.commit()
 
 
 @app.errorhandler(404)
 def page_not_found(error):
     """ returns 404 page"""
     return render_template('404.html'), 404
-
-
-def create_sms_table():
-    """Ctreates PROCESSED_SMS table on database if it's not exists."""
-
-    db = get_database_connection()
-
-    cur = db.cursor()
-
-    try:
-        cur.execute("""CREATE TABLE IF NOT EXISTS PROCESSED_SMS (
-            status ENUM('OK', 'FAILURE', 'DOUBLE', 'NOT-FOUND'),
-            sender CHAR(20),
-            message VARCHAR(400),
-            answer VARCHAR(400),
-            date DATETIME, INDEX(date, status));""")
-        db.commit()
-    except Exception as e:
-        flash(f'Error creating PROCESSED_SMS table; {e}', 'danger')
-
-    db.close()
-
-
-if __name__ == "__main__":
-    create_sms_table()
-    app.run("0.0.0.0", 5000, debug=False)

@@ -3,15 +3,15 @@ import os
 import time
 import sys
 import re
-
-import config
+from app.models import Logs, Serials, Invalids, ProcessedSMS
+from app import db
 import MySQLdb
 from pandas import read_excel
 from app.tools import (
-        _remove_non_alphanum_char,
-        _translate_numbers,
-        get_database_connection,
-        normalize_string
+    normalize_string,
+    _remove_non_alphanum_char,
+    _translate_numbers,
+    _translate_numbers
 )
 
 MAX_FLASH = 100
@@ -30,61 +30,28 @@ def import_database_from_excel(filepath):
     """
     # df contains lookup data in the form of
     # Row	Reference Number	Description	Start Serial	End Serial	Date
+    def model_exists(model_class):
+        return model_class.metadata.tables[model_class.__tablename__].exists(bind=db.session.bind)
 
-    db = get_database_connection()
 
-    cur = db.cursor()
+    for model_class in (Logs, Serials, Invalids):
+        if model_exists(model_class) == True:
+            model_class.__table__.drop(bind=db.session.bind, checkfirst=True)
+        if model_exists(model_class) == False:
+            model_class.__table__.create(bind=db.session.bind, checkfirst=True)
 
     total_flashes = 0
     output = []
-
-    try:
-        cur.execute('DROP TABLE IF EXISTS logs;')
-        cur.execute("""CREATE TABLE logs (            
-            log_name CHAR(200),
-            log_value MEDIUMTEXT);
-            """)
-        db.commit()
-    except Exception as e:
-        print("dropping logs")
-        output.append(
-            f'problem dropping and creating new table for logs in database; {e}')
-
-
-    # remove the serials table if exists, then create the new one
-    try:
-        cur.execute('DROP TABLE IF EXISTS serials;')
-        cur.execute("""CREATE TABLE serials (
-            id INTEGER PRIMARY KEY,
-            ref VARCHAR(200),
-            description VARCHAR(200),
-            start_serial CHAR(30),
-            end_serial CHAR(30),
-            date DATETIME, INDEX(start_serial, end_serial));""")
-        db.commit()
-    except Exception as e:
-        print("problem dropping serials")
-        output.append(
-            f'problem dropping and creating new table serials in database; {e}')
-    
-    cur.execute("INSERT INTO logs VALUES ('db_filename', %s)", (filepath, ))
-    db.commit()
-
-    # remove the invalid table if exists, then create the new one
-    try:
-        cur.execute('DROP TABLE IF EXISTS invalids;')
-        cur.execute("""CREATE TABLE invalids (
-            invalid_serial CHAR(30), INDEX(invalid_serial));""")
-        db.commit()
-    except Exception as e:
-        output.append(f'Error dropping and creating INVALIDS table; {e}')
+    first_log = Logs(log_name='db_filename', log_value=filepath)
+    db.session.add(first_log)
+    db.session.commit()
 
     # insert some place holder logs
-    cur.execute("INSERT INTO logs VALUES ('import', %s)",
-                ('Import started. logs will appear when its done', ))
-    cur.execute("INSERT INTO logs VALUES ('db_check', %s)", ('DB check will be run after the insert is finished', ))
-    db.commit()
-
+    second_log = Logs(log_name='import', log_value='Import started. logs will appear when its done')
+    third_log = Logs(log_name='db_check', log_value='DB check will be run after the insert is finished')
+    db.session.add_all([second_log, third_log])
+    db.session.commit()
+    # db.commit()
     df = read_excel(filepath, 0)
     serials_counter = 1
     line_number = 1
@@ -100,9 +67,9 @@ def import_database_from_excel(filepath):
         try:
             start_serial = normalize_string(start_serial)
             end_serial = normalize_string(end_serial)
-            cur.execute("INSERT INTO serials VALUES (%s, %s, %s, %s, %s, %s);", (
-                line, ref, description, start_serial, end_serial, date)
-            )
+            new_serial = Serials(id=line, ref=ref, description=description, start_serial=start_serial, end_serial=end_serial, date=date)
+            db.session.add(new_serial)
+            db.session.commit()
             serials_counter += 1
         except Exception as e:
             total_flashes += 1
@@ -117,7 +84,8 @@ def import_database_from_excel(filepath):
             except Exception as e:
                 output.append(
                     f'Problem commiting serials into db at around record {line_number} (or previous 1000 ones); {e}')
-    db.commit()
+    db.session.commit()
+    # db.commit()
 
     # now lets save the invalid serials.
 
@@ -128,7 +96,9 @@ def import_database_from_excel(filepath):
         line_number += 1
         try:
             failed_serial = normalize_string(failed_serial)
-            cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
+            new_invalid = Invalids(invalid_serial=failed_serial)
+            db.session.add(new_invalid)
+            db.session.commit()
             invalid_counter += 1
         except Exception as e:
             total_flashes += 1
@@ -144,15 +114,16 @@ def import_database_from_excel(filepath):
             except Exception as e:
                 output.append(
                     f'Problem commiting invalid serials into db at around record {line_number} (or previous 1000 ones); {e}')
-    db.commit()
+    db.session.commit()
 
     # save the logs
     output.append(f'Inserted {serials_counter} serials and {invalid_counter} invalids')
     output.reverse()
-    cur.execute("UPDATE logs SET log_value = %s WHERE log_name = 'import'", ('\n'.join(output), ))
-    db.commit()
+    logs = Logs.query.filter_by(log_name='import').all()
+    for log in logs:
+        log.log_value = '\n'.join(output)
+    db.session.commit()
 
-    db.close()
 
     return
 
@@ -160,12 +131,11 @@ def import_database_from_excel(filepath):
 def db_check():
     """ will do some sanity checks on the db and will flash the errors """
 
-    db = get_database_connection()
-    cur = db.cursor()
-    cur.execute("INSERT INTO logs VALUES ('db_check', %s)",
-                ('DB check started... wait for the results. it may take a while', ))
-    db.commit()
-
+    # db = get_database_connection()
+    # cur = db.cursor()
+    new_log = Logs(log_name='db_check', log_value='DB check started... wait for the results. it may take a while')
+    db.session.add(new_log)
+    db.session.commit()
     def collision(s1, e1, s2, e2):
         if s2 <= s1 <= e2:
             return True
@@ -189,10 +159,8 @@ def db_check():
         return alpha_part, int(digit_part)
 
 
-
-    cur.execute("SELECT id, start_serial, end_serial FROM serials")
-
-    raw_data = cur.fetchall()
+    serials = Serials.query.all()
+    raw_data = [(serial.id, serial.start_serial, serial.end_serial) for serial in serials]
     all_problems = []
 
     data = {}
@@ -222,12 +190,10 @@ def db_check():
     
     all_problems.reverse()
     output = "\n".join(all_problems)
-    
-    cur.execute("UPDATE logs SET log_value = %s WHERE log_name = 'db_check'", (output, ))
-    db.commit()
-
-    db.close()
-
+    logs = Logs.query.filter_by(log_name='db_check').all()
+    for log in logs:
+        log.log_value = output
+    db.session.commit()
 
 filepath = sys.argv[1]
 
