@@ -207,9 +207,6 @@ $RECYCLE.BIN/
 # pycharm files
 .idea/
 
-# special files
-config.py
-
 ### Fandogh files
 .fandogh/
 *.zip 
