@@ -1,4 +1,4 @@
-from app import app
+from app import app, db
 import re
 import requests
 import MySQLdb
@@ -9,14 +9,8 @@ def allowed_file(filename: str):
     return '.' in filename and filename.rsplit(
         '.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
-
-def get_database_connection():
-    """connects to the MySQL database and returns the connection"""
-    return MySQLdb.connect(host=app.config['MYSQL_HOST'],
-                           user=app.config['MYSQL_USERNAME'],
-                           passwd=app.config['MYSQL_PASSWORD'],
-                           db=app.config['MYSQL_DB_NAME'],
-                           charset='utf8')
+def model_exists(model_class):
+    return model_class.metadata.tables[model_class.__tablename__].exists(bind=db.session.bind)
 
 
 def send_sms(receptor, message):

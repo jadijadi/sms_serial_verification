@@ -11,7 +11,8 @@ from app.tools import (
     normalize_string,
     _remove_non_alphanum_char,
     _translate_numbers,
-    _translate_numbers
+    _translate_numbers,
+    model_exists
 )
 
 MAX_FLASH = 100
@@ -30,8 +31,6 @@ def import_database_from_excel(filepath):
     """
     # df contains lookup data in the form of
     # Row	Reference Number	Description	Start Serial	End Serial	Date
-    def model_exists(model_class):
-        return model_class.metadata.tables[model_class.__tablename__].exists(bind=db.session.bind)
 
 
     for model_class in (Logs, Serials, Invalids):
@@ -51,7 +50,6 @@ def import_database_from_excel(filepath):
     third_log = Logs(log_name='db_check', log_value='DB check will be run after the insert is finished')
     db.session.add_all([second_log, third_log])
     db.session.commit()
-    # db.commit()
     df = read_excel(filepath, 0)
     serials_counter = 1
     line_number = 1
@@ -85,7 +83,6 @@ def import_database_from_excel(filepath):
                 output.append(
                     f'Problem commiting serials into db at around record {line_number} (or previous 1000 ones); {e}')
     db.session.commit()
-    # db.commit()
 
     # now lets save the invalid serials.
 

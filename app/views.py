@@ -25,28 +25,8 @@ from flask_login import (
 from werkzeug.utils import secure_filename
 
 from app import app, db, limiter, login_manager
-from app.models import Logs, Serials, Invalids, ProcessedSMS
+from app.models import User. Logs, Serials, Invalids, ProcessedSMS
 from app.tools import normalize_string, _remove_non_alphanum_char, _translate_numbers, allowed_file, send_sms
-
-CALL_BACK_TOKEN = app.config['CALL_BACK_TOKEN']
-API_KEY = app.config['API_KEY']
-
-
-
-class User(UserMixin):
-    """ A minimal and singleton user class used
-    only for administrative tasks
-    """
-    def __init__(self, id):
-        self.id = id
-
-    def __repr__(self):
-        return f"{self.id}"
-
-
-@login_manager.user_loader
-def load_user(userid):
-    return User(userid)
 
 
 user = User(0)

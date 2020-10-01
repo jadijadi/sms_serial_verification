@@ -1,5 +1,22 @@
-from app import db
+from app import db, login_manager
 import enum
+
+
+class User(UserMixin):
+    """ A minimal and singleton user class used
+    only for administrative tasks
+    """
+    def __init__(self, id):
+        self.id = id
+
+    def __repr__(self):
+        return f"{self.id}"
+
+
+@login_manager.user_loader
+def load_user(userid):
+    return User(userid)
+
 
 class SMSStatusEnum(enum.Enum):
     OK = 'OK'
