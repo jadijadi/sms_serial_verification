@@ -94,7 +94,9 @@ def import_database_from_excel(filepath):
             description VARCHAR(200),
             start_serial CHAR(30),
             end_serial CHAR(30),
-            date DATETIME, INDEX(start_serial, end_serial));""")
+            date DATETIME,
+            text1 TEXT,
+            text2 TEXT, INDEX(start_serial, end_serial));""")
         db.commit()
     except Exception as e:
         print("problem dropping serials")
@@ -123,7 +125,7 @@ def import_database_from_excel(filepath):
     serials_counter = 1
     line_number = 1
 
-    for _, (line, ref, description, start_serial, end_serial, date) in df.iterrows():
+    for _, (line, ref, description, start_serial, end_serial, date, text1, text2) in df.iterrows():
         line_number += 1
         if not ref or (ref != ref):
             ref = ""
@@ -134,8 +136,8 @@ def import_database_from_excel(filepath):
         try:
             start_serial = normalize_string(start_serial)
             end_serial = normalize_string(end_serial)
-            cur.execute("INSERT INTO serials VALUES (%s, %s, %s, %s, %s, %s);", (
-                line, ref, description, start_serial, end_serial, date)
+            cur.execute("INSERT INTO serials VALUES (%s, %s, %s, %s, %s, %s, %s, %s);", (
+                line, ref, description, start_serial, end_serial, date, text1, text2)
             )
             serials_counter += 1
         except Exception as e:

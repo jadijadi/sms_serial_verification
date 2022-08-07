@@ -337,14 +337,13 @@ def check_serial(serial):
             desc = ret[2]
             ref_number = ret[1]
             date = ret[5].date()
+            rettext = ret[6] + '\n' + ret[7]
             answer = dedent(f"""\
                 {original_serial}
                 {ref_number}
                 {desc}
                 Hologram date: {date}
-                Genuine product of Schneider Electric
-                شماره تماس با بخش پشتیبانی فروش شرکت التک:
-                021-22038385""")
+                {rettext}""")
             return 'OK', answer
 
 
