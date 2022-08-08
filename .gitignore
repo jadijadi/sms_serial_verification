@@ -209,6 +209,8 @@ $RECYCLE.BIN/
 
 # special files
 config.py
+config.py.dev
+config.py.prod
 
 ### Fandogh files
 .fandogh/
