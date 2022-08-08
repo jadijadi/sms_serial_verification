@@ -338,12 +338,11 @@ def check_serial(serial):
             ref_number = ret[1]
             date = ret[5].date()
             rettext = ret[6] + '\n' + ret[7]
-            answer = dedent(f"""\
-                {original_serial}
-                {ref_number}
-                {desc}
-                Hologram date: {date}
-                {rettext}""")
+            answer = dedent(f"""{original_serial}
+{ref_number}
+{desc}
+Hologram date: {date}
+{rettext}""")
             return 'OK', answer
 
 
