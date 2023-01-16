@@ -60,6 +60,7 @@ app.config.update(SECRET_KEY=config.SECRET_KEY)
 
 class User(UserMixin):
     """ A minimal and singleton user class used only for administrative tasks """
+
     def __init__(self, id):
         self.id = id
 
@@ -73,13 +74,11 @@ user = User(0)
 @app.route('/db_status/', methods=['GET'])
 @login_required
 def db_status():
-
     """ show some status about the DB """
 
-    
     db = get_database_connection()
     cur = db.cursor()
-    
+
     # collect some stats for the GUI
     try:
         cur.execute("SELECT count(*) FROM serials")
@@ -111,8 +110,9 @@ def db_status():
     except:
         log_db_check = 'Can not read db_check logs... yet'
 
-    return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids, 
-                                                   'log_import': log_import, 'log_db_check': log_db_check, 'log_filename': log_filename})
+    return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids,
+                                                   'log_import': log_import, 'log_db_check': log_db_check,
+                                                   'log_filename': log_filename})
 
 
 @app.route('/', methods=['GET', 'POST'])
@@ -132,9 +132,9 @@ def home():
             flash('No selected file', 'danger')
             return redirect(request.url)
         if file and allowed_file(file.filename):
-            #TODO: is space find in a file name? check if it works
+            # TODO: is space find in a file name? check if it works
             filename = secure_filename(file.filename)
-            filename.replace(' ', '_') # no space in filenames! because we will call them as command line arguments
+            filename.replace(' ', '_')  # no space in filenames! because we will call them as command line arguments
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
             subprocess.Popen(["python", "import_db.py", file_path])
@@ -144,7 +144,6 @@ def home():
     db = get_database_connection()
 
     cur = db.cursor()
-
 
     # get last 5000 sms
     cur.execute("SELECT * FROM PROCESSED_SMS ORDER BY date DESC LIMIT 5000")
@@ -158,10 +157,10 @@ def home():
     try:
         cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
         num_ok = cur.fetchone()[0]
-    except: 
+    except:
         num_ok = 'error'
 
-    try:        
+    try:
         cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
         num_failure = cur.fetchone()[0]
     except:
@@ -181,6 +180,7 @@ def home():
 
     return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_double,
                                                'notfound': num_notfound})
+
 
 @app.route("/login", methods=["GET", "POST"])
 @limiter.limit("10 per minute")
@@ -278,6 +278,7 @@ def _translate_numbers(current, new, string):
     translation_table = str.maketrans(current, new)
     return string.translate(translation_table)
 
+
 def normalize_string(serial_number, fixed_size=30):
     """ gets a serial number and standardize it as following:
     >> converts(removes others) all chars to English upper letters and numbers
@@ -299,7 +300,6 @@ def normalize_string(serial_number, fixed_size=30):
     missing_zeros = "0" * (fixed_size - len(all_alpha + all_digit))
 
     return f"{all_alpha}{missing_zeros}{all_digit}"
-
 
 
 def check_serial(serial):
@@ -346,7 +346,6 @@ def check_serial(serial):
                 {rettext}""")
             return 'OK', answer
 
-
     answer = dedent(f"""\
         {original_serial}
         این شماره هولوگرام یافت نشد. لطفا دوباره سعی کنید  و یا با واحد پشتیبانی تماس حاصل فرمایید.
@@ -373,9 +372,8 @@ def process():
     db = get_database_connection()
 
     cur = db.cursor()
-
     log_new_sms(status, sender, message, answer, cur)
-    
+
     db.commit()
     db.close()
 
@@ -383,24 +381,25 @@ def process():
     ret = {"message": "processed"}
     return jsonify(ret), 200
 
+
+
 def log_new_sms(status, sender, message, answer, cur):
     if len(message) > 40:
         return
     now = time.strftime('%Y-%m-%d %H:%M:%S')
     cur.execute("INSERT INTO PROCESSED_SMS (status, sender, message, answer, date) VALUES (%s, %s, %s, %s, %s)", (status, sender, message, answer, now))
-    
+
 @app.errorhandler(404)
 def page_not_found(error):
     """ returns 404 page"""
     return render_template('404.html'), 404
 
 
-
-def create_sms_table():
-    """Ctreates PROCESSED_SMS table on database if it's not exists."""
+# Move all the tables creation scripts here, so that on startup all required tables will be created automatically.
+def create_tables():
+    """Creates PROCESSED_SMS table on database if they don't exist."""
 
     db = get_database_connection()
-
     cur = db.cursor()
 
     try:
@@ -410,13 +409,14 @@ def create_sms_table():
             message VARCHAR(400),
             answer VARCHAR(400),
             date DATETIME, INDEX(date, status));""")
+
         db.commit()
     except Exception as e:
         flash(f'Error creating PROCESSED_SMS table; {e}', 'danger')
-        
+
     db.close()
 
 
+create_tables()  # create even if the module is running by UWSGI
 if __name__ == "__main__":
-    create_sms_table()
     app.run("0.0.0.0", 5000, debug=False)
