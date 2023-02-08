@@ -3,7 +3,7 @@ certifi==2019.11.28
 cffi==1.15.1
 chardet==3.0.4
 Click==7.0
-cryptography==37.0.4
+cryptography==39.0.1
 et-xmlfile==1.1.0
 fandogh-cli==1.26.10
 Flask==1.1.1
