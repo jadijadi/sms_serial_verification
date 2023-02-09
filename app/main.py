@@ -204,7 +204,7 @@ def login():
 @app.route(f"/v1/{config.REMOTE_CALL_API_KEY}/check_one_serial/<serial>", methods=["GET"])
 def check_one_serial_api(serial):
     """ to check whether a serial number is valid or not using api
-    caller should use something like /v1/ABCDSECRET/cehck_one_serial/AA10000
+    caller should use something like /v1/ABCDSECRET/check_one_serial/AA10000
     answer back json which is status = DOUBLE, FAILURE, OK, NOT-FOUND
     """
     status, answer = check_serial(serial)
@@ -263,7 +263,7 @@ def get_database_connection():
 
 
 def send_sms(receptor, message):
-    """ gets a MSISDN and a messaage, then uses KaveNegar to send sms."""
+    """ gets a MSISDN and a message, then uses KaveNegar to send sms."""
     url = f'https://api.kavenegar.com/v1/{config.API_KEY}/sms/send.json'
     data = {"message": message,
             "receptor": receptor}
@@ -396,7 +396,7 @@ def page_not_found(error):
 
 
 def create_sms_table():
-    """Ctreates PROCESSED_SMS table on database if it's not exists."""
+    """Creates PROCESSED_SMS table on database if it's not exists."""
 
     db = get_database_connection()
 

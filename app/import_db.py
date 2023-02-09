@@ -57,7 +57,7 @@ def import_database_from_excel(filepath):
      Row	Reference Number	Description	Start Serial	End Serial	Date
     and the 2nd (1) contains a column of invalid serials. 
 
-    This data will be writeen into the sqlite database located at config.DATABASE_FILE_PATH
+    This data will be written into the sqlite database located at config.DATABASE_FILE_PATH
     in two tables. "serials" and "invalids"
 
     returns two integers: (number of serial rows, number of invalid rows)
