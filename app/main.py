@@ -34,7 +34,7 @@ from flask_login import (
 from pandas import read_excel
 
 app = Flask(__name__)
-limiter = Limiter(app, key_func=get_remote_address)
+limiter = Limiter(get_remote_address, app=app)
 
 MAX_FLASH = 10
 UPLOAD_FOLDER = config.UPLOAD_FOLDER
