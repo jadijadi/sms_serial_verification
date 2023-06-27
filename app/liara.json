@@ -1,0 +1,7 @@
+{
+  "platform": "flask",
+  "flask": {
+    "pythonVersion": "3.11",
+    "appModule": "main:app"
+  }
+}
