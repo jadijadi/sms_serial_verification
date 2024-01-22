@@ -19,6 +19,8 @@ from flask import (
 )
 from werkzeug.utils import secure_filename
 
+import utils
+
 import config
 import MySQLdb
 from flask_limiter import Limiter
@@ -81,36 +83,13 @@ def db_status():
     cur = db.cursor()
     
     # collect some stats for the GUI
-    try:
-        cur.execute("SELECT count(*) FROM serials")
-        num_serials = cur.fetchone()[0]
-    except:
-        num_serials = 'can not query serials count'
-
-    try:
-        cur.execute("SELECT count(*) FROM invalids")
-        num_invalids = cur.fetchone()[0]
-    except:
-        num_invalids = 'can not query invalid count'
-
-    try:
-        cur.execute("SELECT log_value FROM logs WHERE log_name = 'import'")
-        log_import = cur.fetchone()[0]
-    except:
-        log_import = 'can not read import log results... yet'
-
-    try:
-        cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_filename'")
-        log_filename = cur.fetchone()[0]
-    except:
-        log_filename = 'can not read db filename from database'
-
-    try:
-        cur.execute("SELECT log_value FROM logs WHERE log_name = 'db_check'")
-        log_db_check = cur.fetchone()[0]
-    except:
-        log_db_check = 'Can not read db_check logs... yet'
-
+    # execute_and_fetchone method return "error" if raise error. can change "error" with on_error_value key
+    num_serials = utils.execute_and_fetchone(cur, "SELECT count(*) FROM serials", on_error='can not query serials count')
+    num_invalids = utils.execute_and_fetchone(cur, "SELECT count(*) FROM invalids", on_error='can not query invalid count')
+    log_import = utils.execute_and_fetchone(cur, "SELECT log_value FROM logs WHERE log_name = 'import'", on_error='can not read import log results... yet')
+    log_filename = utils.execute_and_fetchone(cur, "SELECT log_value FROM logs WHERE log_name = 'db_filename'", on_error='can not read db filename from database')
+    log_db_check = utils.execute_and_fetchone(cur, "SELECT log_value FROM logs WHERE log_name = 'db_check'", on_error='Can not read db_check logs... yet')
+    
     return render_template('db_status.html', data={'serials': num_serials, 'invalids': num_invalids, 
                                                    'log_import': log_import, 'log_db_check': log_db_check, 'log_filename': log_filename})
 
@@ -155,29 +134,11 @@ def home():
         smss.append({'status': status, 'sender': sender, 'message': message, 'answer': answer, 'date': date})
 
     # collect some stats for the GUI
-    try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
-        num_ok = cur.fetchone()[0]
-    except: 
-        num_ok = 'error'
-
-    try:        
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
-        num_failure = cur.fetchone()[0]
-    except:
-        num_failure = 'error'
-
-    try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
-        num_double = cur.fetchone()[0]
-    except:
-        num_double = 'error'
-
-    try:
-        cur.execute("SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
-        num_notfound = cur.fetchone()[0]
-    except:
-        num_notfound = 'error'
+    # execute_and_fetchone method return "error" if raise error. can change "error" with on_error_value key
+    num_ok = utils.execute_and_fetchone(cur, "SELECT count(*) FROM PROCESSED_SMS WHERE status = 'OK'")
+    num_failure = utils.execute_and_fetchone(cur, "SELECT count(*) FROM PROCESSED_SMS WHERE status = 'FAILURE'")
+    num_double = utils.execute_and_fetchone(cur, "SELECT count(*) FROM PROCESSED_SMS WHERE status = 'DOUBLE'")
+    num_notfound = utils.execute_and_fetchone(cur, "SELECT count(*) FROM PROCESSED_SMS WHERE status = 'NOT-FOUND'")
 
     return render_template('index.html', data={'smss': smss, 'ok': num_ok, 'failure': num_failure, 'double': num_double,
                                                'notfound': num_notfound})
