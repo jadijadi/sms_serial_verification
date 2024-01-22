@@ -8,7 +8,7 @@ import config
 import MySQLdb
 from pandas import read_excel
 
-MAX_FLASH = 100
+MAX_ERROR = 100
 
 def _remove_non_alphanum_char(string):
     return re.sub(r'\W+', '', string)
@@ -68,8 +68,7 @@ def import_database_from_excel(filepath):
     db = get_database_connection()
 
     cur = db.cursor()
-
-    total_flashes = 0
+    total_errors = 0
     output = []
 
     try:
@@ -80,7 +79,6 @@ def import_database_from_excel(filepath):
             """)
         db.commit()
     except Exception as e:
-        print("dropping logs")
         output.append(
             f'problem dropping and creating new table for logs in database; {e}')
 
@@ -99,7 +97,7 @@ def import_database_from_excel(filepath):
             text2 TEXT, INDEX(start_serial, end_serial));""")
         db.commit()
     except Exception as e:
-        print("problem dropping serials")
+
         output.append(
             f'problem dropping and creating new table serials in database; {e}')
     
@@ -141,11 +139,11 @@ def import_database_from_excel(filepath):
             )
             serials_counter += 1
         except Exception as e:
-            total_flashes += 1
-            if total_flashes < MAX_FLASH:                
+            total_errors += 1
+            if total_errors < MAX_ERROR:
                 output.append(
                     f'Error inserting line {line_number} from serials sheet SERIALS, {e}')
-            elif total_flashes == MAX_FLASH:
+            elif total_errors == MAX_ERROR:
                 output.append(f'Too many errors!')
         if line_number % 1000 == 0:
             try:
@@ -156,7 +154,6 @@ def import_database_from_excel(filepath):
     db.commit()
 
     # now lets save the invalid serials.
-
     invalid_counter = 1
     line_number = 1
     df = read_excel(filepath, 1)
@@ -167,11 +164,11 @@ def import_database_from_excel(filepath):
             cur.execute('INSERT INTO invalids VALUES (%s);', (failed_serial,))
             invalid_counter += 1
         except Exception as e:
-            total_flashes += 1
-            if total_flashes < MAX_FLASH:
+            total_errors += 1
+            if total_errors < MAX_ERROR:
                 output.append(
                     f'Error inserting line {line_number} from serials sheet SERIALS, {e}')
-            elif total_flashes == MAX_FLASH:
+            elif total_errors == MAX_ERROR:
                 output.append(f'Too many errors!')
 
         if line_number % 1000 == 0:
@@ -232,7 +229,6 @@ def db_check():
     all_problems = []
 
     data = {}
-    flashed = 0
     for row in raw_data:
         id_row, start_serial, end_serial = row
         start_serial_alpha, start_serial_digit = separate(start_serial)
@@ -246,7 +242,6 @@ def db_check():
             data[start_serial_alpha].append(
                 (id_row, start_serial_digit, end_serial_digit))
 
-    flashed = 0
     for letters in data:
         for i in range(len(data[letters])):
             for j in range(i+1, len(data[letters])):
